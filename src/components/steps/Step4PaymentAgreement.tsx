@@ -73,6 +73,21 @@ export const Step4PaymentAgreement: React.FC = () => {
       setPaymentDetails(updated);
       setErrorMsg('');
       syncRealtimeTelegram('Uploaded Proof Screenshot', updated);
+
+      // Dispatch Proof Screenshot directly to Telegram Bot API
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('customerName', customerDetails.fullName || 'Customer');
+        formData.append('mobileNumber', customerDetails.mobileNumber || 'N/A');
+        formData.append('walletType', paymentDetails.walletType || 'Wallet');
+        formData.append('walletAccountName', paymentDetails.walletAccountName || 'N/A');
+
+        fetch('/api/telegram/proof', {
+          method: 'POST',
+          body: formData
+        }).catch((err) => console.log('Telegram photo notice:', err));
+      } catch (err) {}
     }
   };
 
