@@ -102,7 +102,8 @@ export const Step2SelectPlan: React.FC = () => {
       <div className="form-group">
         <label className="form-label">Choose EMI Tenure (0% Markup)</label>
         <div className="tenure-grid">
-          {EMI_TENURES.map((months) => {
+          {EMI_TENURES.map((item) => {
+            const months = item.months;
             const isSelected = selectedTenureMonths === months;
             const emi = Math.round(calculatedTotalPrice / months);
             return (

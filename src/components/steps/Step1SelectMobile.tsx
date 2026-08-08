@@ -7,6 +7,7 @@ import { BRANDS, SERIES, MODELS, MobileModel } from '../../data/catalog';
 
 export const Step1SelectMobile: React.FC = () => {
   const {
+    modelsList,
     selectedBrandId,
     setSelectedBrandId,
     selectedSeriesId,
@@ -17,7 +18,7 @@ export const Step1SelectMobile: React.FC = () => {
   } = useWizard();
 
   const availableSeries = SERIES.filter((s) => s.brandId === selectedBrandId);
-  const availableModels = MODELS.filter((m) => m.seriesId === selectedSeriesId);
+  const availableModels = modelsList.filter((m) => m.seriesId === selectedSeriesId);
 
   const handleSelectAndProceed = (model: MobileModel, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();

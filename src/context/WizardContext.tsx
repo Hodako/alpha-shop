@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { MobileModel, ColorOption, StorageOption, MODELS, BRANDS, SERIES } from '../data/catalog';
+import { MobileModel, ColorOption, StorageOption, INITIAL_MODELS, BRANDS, SERIES, BrandOption, SeriesOption } from '../data/catalog';
 
 export type DeliveryType = 'open_parcel' | 'standard';
 export type PaymentMethod = 'card' | 'wallet' | 'cod';
@@ -49,6 +49,13 @@ interface WizardContextType {
   goNext: () => void;
   goBack: () => void;
 
+  // Dynamic Catalog State
+  modelsList: MobileModel[];
+  addModel: (newModel: MobileModel) => void;
+  updateModel: (updatedModel: MobileModel) => void;
+  deleteModel: (id: string) => void;
+  resetCatalog: () => void;
+
   // Step 1 Selection
   selectedBrandId: string;
   setSelectedBrandId: (brandId: string) => void;
@@ -87,9 +94,47 @@ const WizardContext = createContext<WizardContextType | undefined>(undefined);
 export const WizardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentStep, setCurrentStep] = useState<number>(0);
 
+  // Dynamic Catalog State stored in LocalStorage
+  const [modelsList, setModelsList] = useState<MobileModel[]>(INITIAL_MODELS);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('alfa_models_catalog');
+      if (saved) {
+        setModelsList(JSON.parse(saved));
+      }
+    } catch (e) {}
+  }, []);
+
+  const saveCatalog = (newList: MobileModel[]) => {
+    setModelsList(newList);
+    try {
+      localStorage.setItem('alfa_models_catalog', JSON.stringify(newList));
+    } catch (e) {}
+  };
+
+  const addModel = (newModel: MobileModel) => {
+    const updated = [newModel, ...modelsList];
+    saveCatalog(updated);
+  };
+
+  const updateModel = (updatedModel: MobileModel) => {
+    const updated = modelsList.map((m) => (m.id === updatedModel.id ? updatedModel : m));
+    saveCatalog(updated);
+  };
+
+  const deleteModel = (id: string) => {
+    const updated = modelsList.filter((m) => m.id !== id);
+    saveCatalog(updated);
+  };
+
+  const resetCatalog = () => {
+    saveCatalog(INITIAL_MODELS);
+  };
+
   // Step 1
-  const [selectedBrandId, setSelectedBrandIdState] = useState<string>('apple');
-  const [selectedSeriesId, setSelectedSeriesIdState] = useState<string>('apple-17');
+  const [selectedBrandId, setSelectedBrandIdState] = useState<string>('samsung');
+  const [selectedSeriesId, setSelectedSeriesIdState] = useState<string>('samsung-a');
   const [selectedModel, setSelectedModel] = useState<MobileModel | null>(null);
 
   // Step 2
@@ -197,7 +242,6 @@ export const WizardProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const setStep = (step: number) => {
     if (step >= 0 && step <= 5) {
       setCurrentStep(step);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -284,6 +328,11 @@ export const WizardProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setStep,
         goNext,
         goBack,
+        modelsList,
+        addModel,
+        updateModel,
+        deleteModel,
+        resetCatalog,
         selectedBrandId,
         setSelectedBrandId,
         selectedSeriesId,
