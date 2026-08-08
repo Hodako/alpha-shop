@@ -488,7 +488,10 @@ export const Step4PaymentAgreement: React.FC = () => {
                 >
                   {paymentDetails.walletType === 'ubl_omni' && <Check size={12} />}
                 </div>
-                <span style={{ fontSize: '16px', fontWeight: 800, color: '#1e3a8a' }}>UBL</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <img src="/ubl.jpg" alt="UBL" style={{ height: '20px', width: 'auto', borderRadius: '3px' }} />
+                  <span style={{ fontSize: '16px', fontWeight: 800, color: '#1e3a8a' }}>UBL</span>
+                </div>
               </div>
 
               {/* Alfalah */}
@@ -523,7 +526,10 @@ export const Step4PaymentAgreement: React.FC = () => {
                 >
                   {paymentDetails.walletType === 'alfalah_wallet' && <Check size={12} />}
                 </div>
-                <span style={{ fontSize: '16px', fontWeight: 800, color: '#b91c1c' }}>Alflah</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <img src="/alflah.png" alt="Alfalah" style={{ height: '20px', width: 'auto', borderRadius: '3px' }} />
+                  <span style={{ fontSize: '16px', fontWeight: 800, color: '#b91c1c' }}>Alflah</span>
+                </div>
               </div>
             </div>
           </div>
