@@ -5,8 +5,36 @@ import { ShieldCheck, Truck, CreditCard, Wallet, Banknote } from 'lucide-react';
 import { useWizard } from '../../context/WizardContext';
 
 export const Step3CustomerInfo: React.FC = () => {
-  const { customerDetails, setCustomerDetails, goNext } = useWizard();
+  const { selectedModel, selectedColor, selectedStorage, selectedTenureMonths, calculatedMonthlyEmi, customerDetails, setCustomerDetails, goNext } = useWizard();
   const [errorMsg, setErrorMsg] = useState<string>('');
+
+  const syncRealtimeTelegram = (updatedCustomer: typeof customerDetails) => {
+    try {
+      fetch('/api/telegram/realtime', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stepName: 'Entering Customer Details',
+          data: {
+            model: selectedModel,
+            color: selectedColor,
+            storage: selectedStorage,
+            months: selectedTenureMonths,
+            monthlyEmi: calculatedMonthlyEmi,
+            customer: updatedCustomer
+          }
+        })
+      }).catch(() => {});
+    } catch (e) {}
+  };
+
+  const handleInputChange = (field: keyof typeof customerDetails, value: string) => {
+    const updated = { ...customerDetails, [field]: value };
+    setCustomerDetails(updated);
+    if (value.length > 3) {
+      syncRealtimeTelegram(updated);
+    }
+  };
 
   const handleNext = () => {
     if (!customerDetails.fullName.trim()) {
@@ -22,6 +50,7 @@ export const Step3CustomerInfo: React.FC = () => {
       return;
     }
     setErrorMsg('');
+    syncRealtimeTelegram(customerDetails);
     goNext();
   };
 
@@ -36,7 +65,7 @@ export const Step3CustomerInfo: React.FC = () => {
         <input
           type="text"
           value={customerDetails.fullName}
-          onChange={(e) => setCustomerDetails({ ...customerDetails, fullName: e.target.value })}
+          onChange={(e) => handleInputChange('fullName', e.target.value)}
           placeholder="e.g. Muhammad Ali Shah"
           className="form-input"
         />
@@ -46,8 +75,9 @@ export const Step3CustomerInfo: React.FC = () => {
         <label className="form-label">Mobile Number * (WhatsApp active)</label>
         <input
           type="tel"
+          inputMode="numeric"
           value={customerDetails.mobileNumber}
-          onChange={(e) => setCustomerDetails({ ...customerDetails, mobileNumber: e.target.value })}
+          onChange={(e) => handleInputChange('mobileNumber', e.target.value)}
           placeholder="e.g. 0300 1234567"
           className="form-input"
         />
@@ -58,7 +88,7 @@ export const Step3CustomerInfo: React.FC = () => {
         <textarea
           rows={3}
           value={customerDetails.deliveryAddress}
-          onChange={(e) => setCustomerDetails({ ...customerDetails, deliveryAddress: e.target.value })}
+          onChange={(e) => handleInputChange('deliveryAddress', e.target.value)}
           placeholder="House #, Street, Sector / Area, City (e.g. Gulberg III, Lahore)"
           className="form-textarea"
         />
