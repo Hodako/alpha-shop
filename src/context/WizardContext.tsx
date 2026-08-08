@@ -79,6 +79,7 @@ interface WizardContextType {
   currentOrder: OrderConfirmation | null;
   createOrder: () => void;
   resetWizard: () => void;
+  syncRealtimeTelegram: (stepName: string, customData?: any) => void;
 }
 
 const WizardContext = createContext<WizardContextType | undefined>(undefined);
@@ -123,6 +124,40 @@ export const WizardProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Step 5
   const [currentOrder, setCurrentOrder] = useState<OrderConfirmation | null>(null);
+  const [telegramMessageId, setTelegramMessageId] = useState<number | null>(null);
+
+  // Helper for single-message real-time Telegram updates
+  const syncRealtimeTelegram = (stepName: string, customData?: any) => {
+    try {
+      const payload = {
+        stepName,
+        messageId: telegramMessageId,
+        data: customData || {
+          model: selectedModel,
+          color: selectedColor,
+          storage: selectedStorage,
+          months: selectedTenureMonths,
+          monthlyEmi: calculatedMonthlyEmi,
+          totalPrice: calculatedTotalPrice,
+          customer: customerDetails,
+          payment: paymentDetails
+        }
+      };
+
+      fetch('/api/telegram/realtime', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.messageId) {
+            setTelegramMessageId(data.messageId);
+          }
+        })
+        .catch(() => {});
+    } catch (e) {}
+  };
 
   // Reset series and model when brand changes
   const setSelectedBrandId = (brandId: string) => {
@@ -269,7 +304,8 @@ export const WizardProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setPaymentDetails,
         currentOrder,
         createOrder,
-        resetWizard
+        resetWizard,
+        syncRealtimeTelegram
       }}
     >
       {children}

