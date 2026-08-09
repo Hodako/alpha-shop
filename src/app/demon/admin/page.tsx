@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Menu,
@@ -10,22 +10,119 @@ import {
   Edit3,
   RotateCcw,
   Search,
-  ShieldAlert,
   ArrowLeft,
   Smartphone,
   Palette,
   Layers,
-  Check,
-  ChevronRight,
   Sliders,
-  Image as ImageIcon,
-  DollarSign,
-  Tag,
   LayoutGrid,
-  List
+  List,
+  Check,
+  ChevronRight
 } from 'lucide-react';
+
+import {
+  ThemeProvider,
+  createTheme,
+  CssBaseline,
+  Drawer,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  Chip,
+  Button,
+  IconButton,
+  Fab,
+  Tooltip,
+  Snackbar,
+  Alert,
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Paper,
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  useMediaQuery
+} from '@mui/material';
+
 import { useWizard } from '../../../context/WizardContext';
 import { BRANDS, SERIES, MobileModel, ColorOption, StorageOption } from '../../../data/catalog';
+
+// Dark Custom Material UI Theme matching Demon Panel identity
+const demonDarkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    background: {
+      default: '#0b0f19',
+      paper: '#0f172a',
+    },
+    primary: {
+      main: '#dc2626',
+      light: '#ef4444',
+      dark: '#b91c1c',
+      contrastText: '#ffffff',
+    },
+    secondary: {
+      main: '#6366f1',
+      light: '#818cf8',
+      dark: '#4f46e5',
+    },
+    info: {
+      main: '#38bdf8',
+    },
+    success: {
+      main: '#10b981',
+    },
+    text: {
+      primary: '#f1f5f9',
+      secondary: '#94a3b8',
+    },
+  },
+  typography: {
+    fontFamily: ['Outfit', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'].join(','),
+    button: {
+      textTransform: 'none',
+      fontWeight: 700,
+    },
+  },
+  shape: {
+    borderRadius: 14,
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 10,
+          padding: '8px 16px',
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          fontWeight: 600,
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+        },
+      },
+    },
+  },
+});
 
 const PRESET_COLORS: ColorOption[] = [
   { name: 'Titanium Black', hex: '#1e293b' },
@@ -48,12 +145,23 @@ export default function DemonResponsiveAdminPage() {
   const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>('all');
   const [selectedSeriesFilter, setSelectedSeriesFilter] = useState<string>('all');
 
-  // View Mode: grid vs table on desktop
+  // View Mode: grid vs table on desktop/mobile
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
   // Add / Edit Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingModel, setEditingModel] = useState<MobileModel | null>(null);
+
+  // Snackbar Toast Feedback
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'info' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
+
+  const showToast = (message: string, severity: 'success' | 'info' | 'error' = 'success') => {
+    setSnackbar({ open: true, message, severity });
+  };
 
   // Form State
   const [formData, setFormData] = useState<{
@@ -71,7 +179,7 @@ export default function DemonResponsiveAdminPage() {
     brandId: 'samsung',
     seriesId: 'samsung-a',
     name: '',
-    basePrice: 50000,
+ basePrice: 50000,
     image: '/samsung.svg',
     specs: '8GB RAM, 256GB Storage, Official Warranty',
     colors: [...PRESET_COLORS.slice(0, 3)],
@@ -84,16 +192,20 @@ export default function DemonResponsiveAdminPage() {
   const [newStorageSize, setNewStorageSize] = useState('');
   const [newPriceDelta, setNewPriceDelta] = useState<number>(0);
 
-  const availableSeriesForFilter = selectedBrandFilter === 'all' 
-    ? SERIES 
-    : SERIES.filter((s) => s.brandId === selectedBrandFilter);
+  const availableSeriesForFilter = useMemo(() => {
+    return selectedBrandFilter === 'all' 
+      ? SERIES 
+      : SERIES.filter((s) => s.brandId === selectedBrandFilter);
+  }, [selectedBrandFilter]);
 
-  const filteredModels = modelsList.filter((m) => {
-    const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesBrand = selectedBrandFilter === 'all' || m.brandId === selectedBrandFilter;
-    const matchesSeries = selectedSeriesFilter === 'all' || m.seriesId === selectedSeriesFilter;
-    return matchesSearch && matchesBrand && matchesSeries;
-  });
+  const filteredModels = useMemo(() => {
+    return modelsList.filter((m) => {
+      const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesBrand = selectedBrandFilter === 'all' || m.brandId === selectedBrandFilter;
+      const matchesSeries = selectedSeriesFilter === 'all' || m.seriesId === selectedSeriesFilter;
+      return matchesSearch && matchesBrand && matchesSeries;
+    });
+  }, [modelsList, searchTerm, selectedBrandFilter, selectedSeriesFilter]);
 
   const handleOpenAddModal = () => {
     setEditingModel(null);
@@ -181,8 +293,10 @@ export default function DemonResponsiveAdminPage() {
 
     if (editingModel) {
       updateModel(modelObj);
+      showToast(`Updated "${modelObj.name}" successfully`, 'success');
     } else {
       addModel(modelObj);
+      showToast(`Added "${modelObj.name}" to catalog`, 'success');
     }
 
     setIsModalOpen(false);
@@ -191,434 +305,969 @@ export default function DemonResponsiveAdminPage() {
   const handleDelete = (id: string, name: string) => {
     if (confirm(`Remove "${name}" from store catalog?`)) {
       deleteModel(id);
+      showToast(`Deleted "${name}"`, 'info');
     }
   };
 
   const handleReset = () => {
     if (confirm('Reset entire catalog back to official factory defaults?')) {
       resetCatalog();
+      showToast('Catalog reset to defaults', 'info');
     }
   };
 
-  return (
-    <div className="admin-root-container">
-      
-      {/* Permanent Desktop Sidebar + Mobile Backdrop Drawer */}
-      {isSidebarOpen && (
-        <div className="sidebar-backdrop" onClick={() => setIsSidebarOpen(false)} />
-      )}
+  // Render Sidebar Content shared between Desktop & MUI Mobile Drawer
+  const renderSidebarContent = () => (
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: 270, backgroundColor: '#0f172a' }}>
+      <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Smartphone size={24} color="#818cf8" />
+          <Typography variant="h6" sx={{ fontWeight: 900, color: '#ffffff', fontSize: '1.1rem' }}>
+            Alfa Mobiles
+          </Typography>
+        </Box>
+        <IconButton size="small" onClick={() => setIsSidebarOpen(false)} sx={{ display: { lg: 'none' }, color: '#94a3b8' }}>
+          <X size={20} />
+        </IconButton>
+      </Box>
 
-      <aside className={`admin-sidebar ${isSidebarOpen ? 'drawer-open' : ''}`}>
-        <div className="sidebar-header">
-          <div className="sidebar-brand">
-            <Smartphone size={24} color="#6366f1" />
-            <span>Alfa Mobiles</span>
-          </div>
-          <button type="button" className="icon-btn mobile-only-inline" onClick={() => setIsSidebarOpen(false)}>
-            <X size={20} color="#94a3b8" />
-          </button>
-        </div>
+      <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1, flex: 1 }}>
+        <Button
+          fullWidth
+          onClick={() => { setActiveTab('catalog'); setIsSidebarOpen(false); }}
+          startIcon={<Smartphone size={18} />}
+          sx={{
+            justifyContent: 'flex-start',
+            px: 2, py: 1.2,
+            borderRadius: 2.5,
+            backgroundColor: activeTab === 'catalog' ? 'rgba(99, 102, 241, 0.18)' : 'transparent',
+            color: activeTab === 'catalog' ? '#818cf8' : '#94a3b8',
+            '&:hover': { backgroundColor: 'rgba(99, 102, 241, 0.12)', color: '#818cf8' },
+          }}
+        >
+          <Box sx={{ flex: 1, textAlign: 'left' }}>Device Catalog</Box>
+          <Chip label={modelsList.length} size="small" sx={{ height: 20, fontSize: '0.7rem', backgroundColor: 'rgba(255,255,255,0.1)' }} />
+        </Button>
 
-        <nav className="sidebar-nav">
-          <button
-            type="button"
-            className={`nav-item ${activeTab === 'catalog' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('catalog'); setIsSidebarOpen(false); }}
-          >
-            <Smartphone size={18} />
-            <span>Device Catalog</span>
-            <span className="count-badge">{modelsList.length}</span>
-          </button>
+        <Button
+          fullWidth
+          onClick={() => { setActiveTab('colors'); setIsSidebarOpen(false); }}
+          startIcon={<Palette size={18} />}
+          sx={{
+            justifyContent: 'flex-start',
+            px: 2, py: 1.2,
+            borderRadius: 2.5,
+            backgroundColor: activeTab === 'colors' ? 'rgba(99, 102, 241, 0.18)' : 'transparent',
+            color: activeTab === 'colors' ? '#818cf8' : '#94a3b8',
+            '&:hover': { backgroundColor: 'rgba(99, 102, 241, 0.12)', color: '#818cf8' },
+          }}
+        >
+          Color Swatches
+        </Button>
 
-          <button
-            type="button"
-            className={`nav-item ${activeTab === 'colors' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('colors'); setIsSidebarOpen(false); }}
-          >
-            <Palette size={18} />
-            <span>Color Swatches</span>
-          </button>
+        <Button
+          fullWidth
+          onClick={() => { setActiveTab('variants'); setIsSidebarOpen(false); }}
+          startIcon={<Layers size={18} />}
+          sx={{
+            justifyContent: 'flex-start',
+            px: 2, py: 1.2,
+            borderRadius: 2.5,
+            backgroundColor: activeTab === 'variants' ? 'rgba(99, 102, 241, 0.18)' : 'transparent',
+            color: activeTab === 'variants' ? '#818cf8' : '#94a3b8',
+            '&:hover': { backgroundColor: 'rgba(99, 102, 241, 0.12)', color: '#818cf8' },
+          }}
+        >
+          Storage Variants
+        </Button>
 
-          <button
-            type="button"
-            className={`nav-item ${activeTab === 'variants' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('variants'); setIsSidebarOpen(false); }}
-          >
-            <Layers size={18} />
-            <span>Storage Variants</span>
-          </button>
+        <Button
+          fullWidth
+          onClick={() => { setActiveTab('brands'); setIsSidebarOpen(false); }}
+          startIcon={<Sliders size={18} />}
+          sx={{
+            justifyContent: 'flex-start',
+            px: 2, py: 1.2,
+            borderRadius: 2.5,
+            backgroundColor: activeTab === 'brands' ? 'rgba(99, 102, 241, 0.18)' : 'transparent',
+            color: activeTab === 'brands' ? '#818cf8' : '#94a3b8',
+            '&:hover': { backgroundColor: 'rgba(99, 102, 241, 0.12)', color: '#818cf8' },
+          }}
+        >
+          Brands & Series
+        </Button>
+      </Box>
 
-          <button
-            type="button"
-            className={`nav-item ${activeTab === 'brands' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('brands'); setIsSidebarOpen(false); }}
-          >
-            <Sliders size={18} />
-            <span>Brands & Series</span>
-          </button>
-        </nav>
+      <Box sx={{ p: 2, borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Button
+          variant="contained"
+          color="primary"
+          fullWidth
+          onClick={handleOpenAddModal}
+          startIcon={<Plus size={18} />}
+          sx={{ py: 1.2, fontWeight: 800 }}
+        >
+          Add New Device
+        </Button>
 
-        <div className="sidebar-footer">
-          <button type="button" onClick={handleOpenAddModal} className="btn btn-primary full-width">
-            <Plus size={18} /> Add New Device
-          </button>
-
-          <Link href="/" className="back-store-link">
+        <Link href="/" style={{ textDecoration: 'none' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, color: '#94a3b8', fontSize: '0.85rem', py: 0.5, '&:hover': { color: '#ffffff' } }}>
             <ArrowLeft size={16} /> Return to Storefront
-          </Link>
-        </div>
-      </aside>
+          </Box>
+        </Link>
+      </Box>
+    </Box>
+  );
 
-      {/* Main Content Area */}
-      <div className="admin-main-wrapper">
+  return (
+    <ThemeProvider theme={demonDarkTheme}>
+      <CssBaseline />
+      
+      <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#0b0f19', color: '#f1f5f9', overflowX: 'hidden' }}>
         
-        {/* Top Header */}
-        <header className="admin-header">
-          <div className="header-left">
-            <button
-              type="button"
-              className="icon-btn lg-hidden"
-              onClick={() => setIsSidebarOpen(true)}
-              aria-label="Open Sidebar Menu"
-            >
-              <Menu size={22} color="#ffffff" />
-            </button>
-            <h2 className="header-title">Admin Dashboard</h2>
-          </div>
+        {/* Permanent Sidebar for Desktop (1024px+) */}
+        <Box
+          component="aside"
+          sx={{
+            width: 270,
+            flexShrink: 0,
+            display: { xs: 'none', lg: 'block' },
+            position: 'fixed',
+            top: 0,
+            bottom: 0,
+            left: 0,
+            zIndex: 100,
+            backgroundColor: '#0f172a',
+            borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+          }}
+        >
+          {renderSidebarContent()}
+        </Box>
 
-          <div className="header-right">
-            <button
-              type="button"
-              onClick={handleOpenAddModal}
-              className="btn btn-primary sm-hidden"
-            >
-              <Plus size={16} /> Add Device
-            </button>
+        {/* Mobile Material UI Slide-in Drawer (<1024px) */}
+        <Drawer
+          anchor="left"
+          open={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          sx={{
+            display: { xs: 'block', lg: 'none' },
+            '& .MuiDrawer-paper': {
+              backgroundColor: '#0f172a',
+              backgroundImage: 'none',
+              width: 270,
+              boxSizing: 'border-box',
+              borderRight: '1px solid rgba(255, 255, 255, 0.12)',
+            },
+          }}
+        >
+          {renderSidebarContent()}
+        </Drawer>
 
-            <button
-              type="button"
-              onClick={handleReset}
-              className="btn btn-secondary"
-              title="Reset Catalog"
-            >
-              <RotateCcw size={16} /> Reset
-            </button>
-          </div>
-        </header>
-
-        {/* Inner Responsive Dashboard Workspace */}
-        <div className="dashboard-content">
+        {/* Main Content Area Wrapper */}
+        <Box
+          sx={{
+            flexGrow: 1,
+            ml: { xs: 0, lg: '270px' },
+            display: 'flex',
+            flexDirection: 'column',
+            minWidth: 0,
+            width: { xs: '100%', lg: 'calc(100% - 270px)' },
+          }}
+        >
           
-          {/* Overview Hero Card */}
-          <div className="hero-card">
-            <div className="hero-card-header">
-              <div>
-                <h1 className="hero-title">
-                  {activeTab === 'catalog' && 'Mobile Device Catalog'}
-                  {activeTab === 'colors' && 'Color Variations Manager'}
-                  {activeTab === 'variants' && 'Storage & RAM Variant Manager'}
-                  {activeTab === 'brands' && 'Brand & Series Structure'}
-                </h1>
-                <p className="hero-desc">
-                  Manage devices, color swatches, RAM/storage variants & PKR prices in real time.
-                </p>
-              </div>
-
-              <div className="hero-actions">
-                <button type="button" onClick={handleOpenAddModal} className="btn btn-primary">
-                  <Plus size={16} /> Add Device
-                </button>
-              </div>
-            </div>
-
-            {/* Responsive Search & Filters */}
-            <div className="filters-container">
-              <div className="search-input-wrapper">
-                <Search size={18} color="#94a3b8" className="search-icon" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search device name..."
-                  className="search-input"
-                />
-                {searchTerm && (
-                  <X size={16} color="#94a3b8" className="clear-icon" onClick={() => setSearchTerm('')} />
-                )}
-              </div>
-
-              <div className="select-filters-group">
-                <select
-                  value={selectedBrandFilter}
-                  onChange={(e) => {
-                    setSelectedBrandFilter(e.target.value);
-                    setSelectedSeriesFilter('all');
-                  }}
-                  className="custom-select"
-                >
-                  <option value="all">All Brands ({BRANDS.length})</option>
-                  {BRANDS.map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-
-                <select
-                  value={selectedSeriesFilter}
-                  onChange={(e) => setSelectedSeriesFilter(e.target.value)}
-                  className="custom-select"
-                >
-                  <option value="all">All Series</option>
-                  {availableSeriesForFilter.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-
-                <div className="view-toggle-group sm-hidden">
-                  <button
-                    type="button"
-                    className={`toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
-                    onClick={() => setViewMode('grid')}
-                    title="Grid View"
-                  >
-                    <LayoutGrid size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    className={`toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
-                    onClick={() => setViewMode('table')}
-                    title="Table View"
-                  >
-                    <List size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Horizontal Brand Pills (Scrollable) */}
-            <div className="brand-pills-row">
-              <button
-                type="button"
-                className={`brand-pill ${selectedBrandFilter === 'all' ? 'active' : ''}`}
-                onClick={() => { setSelectedBrandFilter('all'); setSelectedSeriesFilter('all'); }}
+          {/* Top Header */}
+          <Box
+            component="header"
+            sx={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 90,
+              backgroundColor: 'rgba(15, 23, 42, 0.92)',
+              backdropFilter: 'blur(12px)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              px: { xs: 2, sm: 3 },
+              py: 1.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <IconButton
+                onClick={() => setIsSidebarOpen(true)}
+                sx={{ display: { lg: 'none' }, color: '#ffffff', p: 0.8 }}
+                aria-label="Open Navigation Drawer"
               >
-                All ({modelsList.length})
-              </button>
-              {BRANDS.map((b) => {
-                const count = modelsList.filter((m) => m.brandId === b.id).length;
-                return (
-                  <button
-                    key={b.id}
-                    type="button"
-                    className={`brand-pill ${selectedBrandFilter === b.id ? 'active' : ''}`}
-                    onClick={() => { setSelectedBrandFilter(b.id); setSelectedSeriesFilter('all'); }}
+                <Menu size={22} />
+              </IconButton>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#ffffff', fontSize: { xs: '1.05rem', sm: '1.25rem' } }}>
+                Admin Dashboard
+              </Typography>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                onClick={handleOpenAddModal}
+                startIcon={<Plus size={16} />}
+                sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+              >
+                Add Device
+              </Button>
+
+              <Button
+                variant="outlined"
+                color="inherit"
+                size="small"
+                onClick={handleReset}
+                startIcon={<RotateCcw size={16} />}
+                sx={{ borderColor: 'rgba(255,255,255,0.2)', color: '#cbd5e1' }}
+              >
+                Reset
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Inner Workspace Container */}
+          <Box
+            sx={{
+              p: { xs: 1.5, sm: 2.5, md: 3 },
+              maxWidth: 1350,
+              width: '100%',
+              mx: 'auto',
+              boxSizing: 'border-box',
+            }}
+          >
+            
+            {/* Overview Hero Card */}
+            <Card
+              sx={{
+                background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)',
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+                borderRadius: 4,
+                p: { xs: 2, sm: 2.5 },
+                mb: 3,
+              }}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 1.5 }}>
+                <Box>
+                  <Typography variant="h5" sx={{ fontWeight: 900, color: '#ffffff', fontSize: { xs: '1.25rem', sm: '1.5rem' }, mb: 0.5 }}>
+                    {activeTab === 'catalog' && 'Mobile Device Catalog'}
+                    {activeTab === 'colors' && 'Color Variations Manager'}
+                    {activeTab === 'variants' && 'Storage & RAM Variant Manager'}
+                    {activeTab === 'brands' && 'Brand & Series Structure'}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#a5b4fc', fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>
+                    Manage devices, color swatches, RAM/storage variants & PKR prices in real time.
+                  </Typography>
+                </Box>
+
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  onClick={handleOpenAddModal}
+                  startIcon={<Plus size={16} />}
+                  sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+                >
+                  Add Device
+                </Button>
+              </Box>
+
+              {/* Filters & Search Row */}
+              <Box sx={{ mt: 2.5, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5 }}>
+                
+                {/* Search Field */}
+                <Box sx={{ flex: 1, minWidth: 200 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Search device name..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    InputProps={{
+                      startAdornment: <Search size={18} color="#94a3b8" style={{ marginRight: 8 }} />,
+                      endAdornment: searchTerm ? (
+                        <IconButton size="small" onClick={() => setSearchTerm('')} sx={{ color: '#94a3b8' }}>
+                          <X size={16} />
+                        </IconButton>
+                      ) : null,
+                      sx: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.35)',
+                        borderRadius: 2.5,
+                        fontSize: '0.875rem',
+                        '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.15)' },
+                      },
+                    }}
+                  />
+                </Box>
+
+                {/* Brand & Series Select Filters */}
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <FormControl size="small" sx={{ minWidth: 130, flex: { xs: 1, sm: 'none' } }}>
+                    <Select
+                      value={selectedBrandFilter}
+                      onChange={(e) => {
+                        setSelectedBrandFilter(e.target.value);
+                        setSelectedSeriesFilter('all');
+                      }}
+                      sx={{
+                        backgroundColor: 'rgba(0, 0, 0, 0.35)',
+                        borderRadius: 2.5,
+                        fontSize: '0.825rem',
+                        color: '#ffffff',
+                        '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.15)' },
+                      }}
+                    >
+                      <MenuItem value="all">All Brands ({BRANDS.length})</MenuItem>
+                      {BRANDS.map((b) => (
+                        <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <FormControl size="small" sx={{ minWidth: 120, flex: { xs: 1, sm: 'none' } }}>
+                    <Select
+                      value={selectedSeriesFilter}
+                      onChange={(e) => setSelectedSeriesFilter(e.target.value)}
+                      sx={{
+                        backgroundColor: 'rgba(0, 0, 0, 0.35)',
+                        borderRadius: 2.5,
+                        fontSize: '0.825rem',
+                        color: '#ffffff',
+                        '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.15)' },
+                      }}
+                    >
+                      <MenuItem value="all">All Series</MenuItem>
+                      {availableSeriesForFilter.map((s) => (
+                        <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  {/* Grid / Table View Toggle Buttons */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      backgroundColor: 'rgba(0, 0, 0, 0.35)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      borderRadius: 2.5,
+                      p: 0.3,
+                    }}
                   >
-                    {b.name} ({count})
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                    <IconButton
+                      size="small"
+                      onClick={() => setViewMode('grid')}
+                      sx={{
+                        borderRadius: 2,
+                        p: 0.6,
+                        backgroundColor: viewMode === 'grid' ? '#6366f1' : 'transparent',
+                        color: viewMode === 'grid' ? '#ffffff' : '#94a3b8',
+                        '&:hover': { backgroundColor: viewMode === 'grid' ? '#6366f1' : 'rgba(255,255,255,0.08)' },
+                      }}
+                      title="Grid View"
+                    >
+                      <LayoutGrid size={16} />
+                    </IconButton>
 
-          {/* DEVICE CATALOG DISPLAY */}
-          {filteredModels.length > 0 ? (
-            <div>
-              {/* Desktop Table View (visible on lg screens when viewMode === 'table') */}
-              {viewMode === 'table' && (
-                <div className="desktop-table-container lg-only-block">
-                  <table className="desktop-table">
-                    <thead>
-                      <tr>
-                        <th>Device</th>
-                        <th>Brand / Series</th>
-                        <th>Colors</th>
-                        <th>Cash Price</th>
-                        <th>24-Mo EMI</th>
-                        <th style={{ textAlign: 'right' }}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredModels.map((model) => {
-                        const brand = BRANDS.find((b) => b.id === model.brandId);
-                        const series = SERIES.find((s) => s.id === model.seriesId);
-                        const monthly = Math.round(model.basePrice / 24);
+                    <IconButton
+                      size="small"
+                      onClick={() => setViewMode('table')}
+                      sx={{
+                        borderRadius: 2,
+                        p: 0.6,
+                        backgroundColor: viewMode === 'table' ? '#6366f1' : 'transparent',
+                        color: viewMode === 'table' ? '#ffffff' : '#94a3b8',
+                        '&:hover': { backgroundColor: viewMode === 'table' ? '#6366f1' : 'rgba(255,255,255,0.08)' },
+                      }}
+                      title="Table View"
+                    >
+                      <List size={16} />
+                    </IconButton>
+                  </Box>
+                </Box>
+              </Box>
 
-                        return (
-                          <tr key={model.id}>
-                            <td>
-                              <div className="table-device-cell">
-                                <img src={model.image} alt={model.name} />
-                                <div>
-                                  <div className="table-device-name">{model.name}</div>
-                                  <div className="table-device-specs">{model.specs.join(' • ')}</div>
-                                </div>
-                              </div>
-                            </td>
+              {/* Horizontal Scrollable Brand Pills */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 1,
+                  overflowX: 'auto',
+                  mt: 2,
+                  pb: 0.5,
+                  '&::-webkit-scrollbar': { height: 4 },
+                  '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 4 },
+                }}
+              >
+                <Chip
+                  label={`All (${modelsList.length})`}
+                  onClick={() => { setSelectedBrandFilter('all'); setSelectedSeriesFilter('all'); }}
+                  color={selectedBrandFilter === 'all' ? 'secondary' : 'default'}
+                  variant={selectedBrandFilter === 'all' ? 'filled' : 'outlined'}
+                  size="small"
+                  clickable
+                  sx={{ borderRadius: 4, fontWeight: 700, fontSize: '0.75rem' }}
+                />
+                {BRANDS.map((b) => {
+                  const count = modelsList.filter((m) => m.brandId === b.id).length;
+                  const isSelected = selectedBrandFilter === b.id;
+                  return (
+                    <Chip
+                      key={b.id}
+                      label={`${b.name} (${count})`}
+                      onClick={() => { setSelectedBrandFilter(b.id); setSelectedSeriesFilter('all'); }}
+                      color={isSelected ? 'secondary' : 'default'}
+                      variant={isSelected ? 'filled' : 'outlined'}
+                      size="small"
+                      clickable
+                      sx={{ borderRadius: 4, fontWeight: 600, fontSize: '0.75rem', borderColor: isSelected ? undefined : 'rgba(255,255,255,0.15)' }}
+                    />
+                  );
+                })}
+              </Box>
+            </Card>
 
-                            <td className="table-text-cell">
-                              <div>{brand?.name}</div>
-                              <div className="sub-text">{series?.name}</div>
-                            </td>
+            {/* TAB 1: DEVICE CATALOG */}
+            {activeTab === 'catalog' && (
+              <>
+                {filteredModels.length > 0 ? (
+                  <>
+                    {/* TABLE VIEW: Responsive Table Container */}
+                    {viewMode === 'table' && (
+                      <TableContainer
+                        component={Paper}
+                        sx={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          borderRadius: 4,
+                          overflowX: 'auto',
+                          mb: 3,
+                        }}
+                      >
+                        <Table size="small" aria-label="Device Catalog Table">
+                          <TableHead sx={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
+                            <TableRow>
+                              <TableCell sx={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.75rem' }}>DEVICE</TableCell>
+                              <TableCell sx={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.75rem' }}>BRAND / SERIES</TableCell>
+                              <TableCell sx={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.75rem' }}>SWATCHES</TableCell>
+                              <TableCell sx={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.75rem' }}>CASH PRICE</TableCell>
+                              <TableCell sx={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.75rem' }}>24-MO EMI</TableCell>
+                              <TableCell align="right" sx={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.75rem' }}>ACTIONS</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {filteredModels.map((model) => {
+                              const brand = BRANDS.find((b) => b.id === model.brandId);
+                              const series = SERIES.find((s) => s.id === model.seriesId);
+                              const monthly = Math.round(model.basePrice / 24);
 
-                            <td>
-                              <div className="swatches-dot-row">
-                                {model.colors && model.colors.map((c, i) => (
-                                  <span key={i} className="color-dot" style={{ backgroundColor: c.hex }} title={c.name} />
-                                ))}
-                              </div>
-                            </td>
+                              return (
+                                <TableRow key={model.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 }, borderColor: 'rgba(255,255,255,0.05)' }}>
+                                  <TableCell>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                      <Box
+                                        component="img"
+                                        src={model.image}
+                                        alt={model.name}
+                                        sx={{ width: 38, height: 38, objectFit: 'contain', backgroundColor: '#ffffff', borderRadius: 2, p: 0.5 }}
+                                      />
+                                      <Box>
+                                        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#ffffff', fontSize: '0.875rem' }}>
+                                          {model.name}
+                                        </Typography>
+                                        <Typography variant="caption" sx={{ color: '#64748b', display: 'block', fontSize: '0.7rem' }}>
+                                          {model.specs.join(' • ')}
+                                        </Typography>
+                                      </Box>
+                                    </Box>
+                                  </TableCell>
 
-                            <td className="table-price-cell">
-                              Rs. {model.basePrice.toLocaleString('en-PK')}
-                            </td>
+                                  <TableCell>
+                                    <Typography variant="body2" sx={{ color: '#cbd5e1', fontWeight: 600, fontSize: '0.8rem' }}>
+                                      {brand?.name}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: '#64748b', display: 'block', fontSize: '0.7rem' }}>
+                                      {series?.name}
+                                    </Typography>
+                                  </TableCell>
 
-                            <td className="table-emi-cell">
-                              Rs. {monthly.toLocaleString('en-PK')}/mo
-                            </td>
+                                  <TableCell>
+                                    <Box sx={{ display: 'flex', gap: 0.6, alignItems: 'center' }}>
+                                      {model.colors && model.colors.map((c, i) => (
+                                        <Tooltip title={c.name} key={i} arrow>
+                                          <Box
+                                            sx={{
+                                              width: 14,
+                                              height: 14,
+                                              borderRadius: '50%',
+                                              backgroundColor: c.hex,
+                                              border: '1px solid rgba(255,255,255,0.4)',
+                                            }}
+                                          />
+                                        </Tooltip>
+                                      ))}
+                                    </Box>
+                                  </TableCell>
 
-                            <td style={{ textAlign: 'right' }}>
-                              <div className="table-actions-row">
-                                <button type="button" onClick={() => handleOpenEditModal(model)} className="btn-action edit">
-                                  <Edit3 size={14} /> Edit
-                                </button>
-                                <button type="button" onClick={() => handleDelete(model.id, model.name)} className="btn-action delete">
-                                  <Trash2 size={14} /> Delete
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                                  <TableCell sx={{ color: '#f43f5e', fontWeight: 800, fontSize: '0.85rem' }}>
+                                    Rs. {model.basePrice.toLocaleString('en-PK')}
+                                  </TableCell>
 
-              {/* Responsive Cards Grid Layout:
-                  - Mobile (<640px): STRICTLY 1 ITEM PER ROW (grid-cols-1)
-                  - Tablet (640px-1023px): 2 ITEMS PER ROW (sm:grid-cols-2)
-                  - Desktop (1024px+): 3-4 ITEMS PER ROW (lg:grid-cols-3 xl:grid-cols-4)
-              */}
-              {(viewMode === 'grid' || true) && (
-                <div className={`responsive-cards-grid ${viewMode === 'table' ? 'lg-hidden-grid' : ''}`}>
-                  {filteredModels.map((model) => {
-                    const brand = BRANDS.find((b) => b.id === model.brandId);
-                    const series = SERIES.find((s) => s.id === model.seriesId);
-                    const monthly = Math.round(model.basePrice / 24);
+                                  <TableCell sx={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.8rem' }}>
+                                    Rs. {monthly.toLocaleString('en-PK')}/mo
+                                  </TableCell>
 
+                                  <TableCell align="right">
+                                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.8 }}>
+                                      <Button
+                                        size="small"
+                                        onClick={() => handleOpenEditModal(model)}
+                                        startIcon={<Edit3 size={14} />}
+                                        sx={{
+                                          fontSize: '0.725rem',
+                                          py: 0.4,
+                                          px: 1,
+                                          backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                                          color: '#818cf8',
+                                          '&:hover': { backgroundColor: 'rgba(99, 102, 241, 0.25)' },
+                                        }}
+                                      >
+                                        Edit
+                                      </Button>
+                                      <Button
+                                        size="small"
+                                        onClick={() => handleDelete(model.id, model.name)}
+                                        startIcon={<Trash2 size={14} />}
+                                        sx={{
+                                          fontSize: '0.725rem',
+                                          py: 0.4,
+                                          px: 1,
+                                          backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                                          color: '#f87171',
+                                          '&:hover': { backgroundColor: 'rgba(239, 68, 68, 0.25)' },
+                                        }}
+                                      >
+                                        Delete
+                                      </Button>
+                                    </Box>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    )}
+
+                    {/* GRID VIEW: Strict Mobile-First Layout */}
+                    {/*
+                      Mobile (<640px): 1 COLUMN PER ROW
+                      Tablet (640px-1023px): 2 COLUMNS PER ROW
+                      Desktop (1024px-1279px): 3 COLUMNS PER ROW
+                      Large Desktop (1280px+): 4 COLUMNS PER ROW
+                    */}
+                    {viewMode === 'grid' && (
+                      <Box
+                        sx={{
+                          display: 'grid',
+                          gridTemplateColumns: {
+                            xs: '1fr',
+                            sm: 'repeat(2, 1fr)',
+                            md: 'repeat(3, 1fr)',
+                            xl: 'repeat(4, 1fr)',
+                          },
+                          gap: 2,
+                          width: '100%',
+                        }}
+                      >
+                        {filteredModels.map((model) => {
+                          const brand = BRANDS.find((b) => b.id === model.brandId);
+                          const series = SERIES.find((s) => s.id === model.seriesId);
+                          const monthly = Math.round(model.basePrice / 24);
+
+                          return (
+                            <Card
+                              key={model.id}
+                              sx={{
+                                backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                                border: '1px solid rgba(255, 255, 255, 0.08)',
+                                borderRadius: 3.5,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                transition: 'transform 0.2s ease, border-color 0.2s ease',
+                                '&:hover': {
+                                  borderColor: 'rgba(99, 102, 241, 0.4)',
+                                  transform: 'translateY(-2px)',
+                                },
+                              }}
+                            >
+                              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 }, display: 'flex', flexDirection: 'column', gap: 1.5, flex: 1 }}>
+                                
+                                {/* Top Header Info */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                  <Box
+                                    sx={{
+                                      width: 48,
+                                      height: 48,
+                                      backgroundColor: '#ffffff',
+                                      borderRadius: 2.5,
+                                      p: 0.5,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      flexShrink: 0,
+                                    }}
+                                  >
+                                    <Box component="img" src={model.image} alt={model.name} sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                                  </Box>
+
+                                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                                    <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.68rem', display: 'block' }}>
+                                      {brand?.name} • {series?.name}
+                                    </Typography>
+                                    <Typography
+                                      variant="subtitle1"
+                                      sx={{
+                                        fontWeight: 800,
+                                        color: '#ffffff',
+                                        fontSize: '0.95rem',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        lineHeight: 1.2,
+                                        my: 0.3,
+                                      }}
+                                    >
+                                      {model.name}
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      sx={{
+                                        color: '#94a3b8',
+                                        fontSize: '0.725rem',
+                                        display: 'block',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                      }}
+                                    >
+                                      {model.specs.join(' • ')}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+
+                                {/* Swatches Strip */}
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                                    px: 1.5,
+                                    py: 0.8,
+                                    borderRadius: 2,
+                                  }}
+                                >
+                                  <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600, fontSize: '0.7rem' }}>
+                                    Swatches:
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', gap: 0.8, alignItems: 'center' }}>
+                                    {model.colors && model.colors.length > 0 ? (
+                                      model.colors.map((c, i) => (
+                                        <Tooltip key={i} title={c.name} arrow>
+                                          <Box
+                                            sx={{
+                                              width: 14,
+                                              height: 14,
+                                              borderRadius: '50%',
+                                              backgroundColor: c.hex,
+                                              border: '1px solid rgba(255, 255, 255, 0.4)',
+                                            }}
+                                          />
+                                        </Tooltip>
+                                      ))
+                                    ) : (
+                                      <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.7rem' }}>Standard</Typography>
+                                    )}
+                                  </Box>
+                                </Box>
+
+                                {/* Price Box */}
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                                    px: 1.5,
+                                    py: 1,
+                                    borderRadius: 2.5,
+                                  }}
+                                >
+                                  <Box>
+                                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.65rem', display: 'block' }}>
+                                      Cash Price
+                                    </Typography>
+                                    <Typography variant="subtitle2" sx={{ color: '#f43f5e', fontWeight: 900, fontSize: '0.95rem' }}>
+                                      Rs. {model.basePrice.toLocaleString('en-PK')}
+                                    </Typography>
+                                  </Box>
+
+                                  <Box sx={{ textAlign: 'right' }}>
+                                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.65rem', display: 'block' }}>
+                                      24-Mo EMI
+                                    </Typography>
+                                    <Typography variant="subtitle2" sx={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem' }}>
+                                      Rs. {monthly.toLocaleString('en-PK')}/mo
+                                    </Typography>
+                                  </Box>
+                                </Box>
+
+                                {/* Action Buttons */}
+                                <Box sx={{ display: 'flex', gap: 1, mt: 'auto' }}>
+                                  <Button
+                                    fullWidth
+                                    size="small"
+                                    onClick={() => handleOpenEditModal(model)}
+                                    startIcon={<Edit3 size={14} />}
+                                    sx={{
+                                      backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                                      color: '#818cf8',
+                                      fontSize: '0.75rem',
+                                      py: 0.8,
+                                      '&:hover': { backgroundColor: 'rgba(99, 102, 241, 0.25)' },
+                                    }}
+                                  >
+                                    Edit
+                                  </Button>
+
+                                  <Button
+                                    fullWidth
+                                    size="small"
+                                    onClick={() => handleDelete(model.id, model.name)}
+                                    startIcon={<Trash2 size={14} />}
+                                    sx={{
+                                      backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                                      color: '#f87171',
+                                      fontSize: '0.75rem',
+                                      py: 0.8,
+                                      '&:hover': { backgroundColor: 'rgba(239, 68, 68, 0.25)' },
+                                    }}
+                                  >
+                                    Delete
+                                  </Button>
+                                </Box>
+
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </Box>
+                    )}
+                  </>
+                ) : (
+                  <Card sx={{ p: 5, textAlign: 'center', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 4 }}>
+                    <Smartphone size={48} color="#64748b" style={{ marginBottom: 8 }} />
+                    <Typography variant="h6" sx={{ color: '#cbd5e1', fontWeight: 700, mb: 2 }}>
+                      No devices found matching your criteria.
+                    </Typography>
+                    <Button variant="contained" color="primary" onClick={handleOpenAddModal} startIcon={<Plus size={16} />}>
+                      Add First Device
+                    </Button>
+                  </Card>
+                )}
+              </>
+            )}
+
+            {/* TAB 2: COLOR SWATCHES MANAGER */}
+            {activeTab === 'colors' && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#ffffff', mb: 1 }}>
+                  Global Color Variations Catalog
+                </Typography>
+
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2 }}>
+                  {PRESET_COLORS.map((preset, idx) => {
+                    const matchedModels = modelsList.filter((m) => m.colors?.some((c) => c.hex.toLowerCase() === preset.hex.toLowerCase()));
                     return (
-                      <div key={model.id} className="device-card-item">
-                        <div className="card-header-row">
-                          <div className="card-img-box">
-                            <img src={model.image} alt={model.name} />
-                          </div>
-                          <div className="card-header-meta">
-                            <span className="card-brand-badge">{brand?.name} • {series?.name}</span>
-                            <h3 className="card-device-title">{model.name}</h3>
-                            <div className="card-specs-text">{model.specs.join(' • ')}</div>
-                          </div>
-                        </div>
-
-                        {/* Color Swatches Bar */}
-                        <div className="card-swatches-strip">
-                          <span className="strip-label">Swatches:</span>
-                          <div className="dots-flex">
-                            {model.colors && model.colors.length > 0 ? (
-                              model.colors.map((c, i) => (
-                                <span
-                                  key={i}
-                                  className="color-dot"
-                                  style={{ backgroundColor: c.hex }}
-                                  title={`${c.name} (${c.hex})`}
-                                />
-                              ))
-                            ) : (
-                              <span className="no-swatches">Standard</span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Price Box */}
-                        <div className="card-price-box">
-                          <div>
-                            <div className="price-label">Cash Price</div>
-                            <div className="cash-price-val">Rs. {model.basePrice.toLocaleString('en-PK')}</div>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div className="price-label">24-Mo EMI</div>
-                            <div className="emi-price-val">Rs. {monthly.toLocaleString('en-PK')}/mo</div>
-                          </div>
-                        </div>
-
-                        {/* Card Touch Actions */}
-                        <div className="card-actions-grid">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditModal(model)}
-                            className="btn-card-action edit"
-                          >
-                            <Edit3 size={15} /> Edit & Variants
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(model.id, model.name)}
-                            className="btn-card-action delete"
-                          >
-                            <Trash2 size={15} /> Delete
-                          </button>
-                        </div>
-                      </div>
+                      <Card key={idx} sx={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', p: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                          <Box sx={{ width: 28, height: 28, borderRadius: '50%', backgroundColor: preset.hex, border: '2px solid rgba(255,255,255,0.4)' }} />
+                          <Box>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#ffffff' }}>{preset.name}</Typography>
+                            <Typography variant="caption" sx={{ color: '#94a3b8' }}>{preset.hex}</Typography>
+                          </Box>
+                          <Chip label={`${matchedModels.length} models`} size="small" color="secondary" sx={{ ml: 'auto', fontSize: '0.7rem' }} />
+                        </Box>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                          {matchedModels.length > 0 ? (
+                            matchedModels.map((m) => (
+                              <Chip key={m.id} label={m.name} size="small" variant="outlined" sx={{ fontSize: '0.68rem', color: '#cbd5e1', borderColor: 'rgba(255,255,255,0.15)' }} />
+                            ))
+                          ) : (
+                            <Typography variant="caption" sx={{ color: '#64748b' }}>No models assigned yet</Typography>
+                          )}
+                        </Box>
+                      </Card>
                     );
                   })}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="empty-state-card">
-              <Smartphone size={44} color="#64748b" />
-              <p>No devices found matching your criteria.</p>
-              <button type="button" onClick={handleOpenAddModal} className="btn btn-primary">
-                <Plus size={16} /> Add First Device
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
+                </Box>
+              </Box>
+            )}
 
-      {/* Floating Action Button (FAB) for Mobile */}
-      <button
-        type="button"
-        className="mobile-fab"
-        onClick={handleOpenAddModal}
-        aria-label="Add Device"
-      >
-        <Plus size={24} color="#ffffff" />
-      </button>
+            {/* TAB 3: STORAGE VARIANTS MANAGER */}
+            {activeTab === 'variants' && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#ffffff', mb: 1 }}>
+                  Storage & RAM Configurations Matrix
+                </Typography>
 
-      {/* Full-Screen Responsive Modal / Drawer */}
-      {isModalOpen && (
-        <div className="modal-backdrop">
-          <div className="modal-container">
-            <div className="modal-header">
-              <div>
-                <h2 className="modal-title">
-                  {editingModel ? `Edit ${editingModel.name}` : 'Add New Mobile Device'}
-                </h2>
-                <p className="modal-subtitle">
-                  Configure specs, colors, storage variants, image source & prices.
-                </p>
-              </div>
-              <button type="button" className="icon-btn" onClick={() => setIsModalOpen(false)}>
-                <X size={20} color="#94a3b8" />
-              </button>
-            </div>
+                <TableContainer component={Paper} sx={{ backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <Table size="small">
+                    <TableHead sx={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
+                      <TableRow>
+                        <TableCell sx={{ color: '#94a3b8', fontWeight: 700 }}>DEVICE MODEL</TableCell>
+                        <TableCell sx={{ color: '#94a3b8', fontWeight: 700 }}>BASE CASH PRICE</TableCell>
+                        <TableCell sx={{ color: '#94a3b8', fontWeight: 700 }}>AVAILABLE VARIANTS & DELTAS</TableCell>
+                        <TableCell align="right" sx={{ color: '#94a3b8', fontWeight: 700 }}>ACTION</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {modelsList.map((m) => (
+                        <TableRow key={m.id} hover>
+                          <TableCell sx={{ color: '#ffffff', fontWeight: 800 }}>{m.name}</TableCell>
+                          <TableCell sx={{ color: '#f43f5e', fontWeight: 700 }}>Rs. {m.basePrice.toLocaleString('en-PK')}</TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
+                              {m.storageOptions?.map((st, i) => (
+                                <Chip
+                                  key={i}
+                                  label={`${st.size} ${st.priceDelta > 0 ? `(+Rs. ${st.priceDelta.toLocaleString('en-PK')})` : '(Base)'}`}
+                                  size="small"
+                                  sx={{ backgroundColor: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', fontSize: '0.725rem' }}
+                                />
+                              ))}
+                            </Box>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Button size="small" onClick={() => handleOpenEditModal(m)} sx={{ color: '#818cf8' }}>Manage</Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            )}
 
-            <form onSubmit={handleSaveModel} className="modal-body">
-              {/* Brand & Series Selection */}
-              <div className="form-responsive-grid">
-                <div>
-                  <label className="field-label">Brand *</label>
-                  <select
+            {/* TAB 4: BRANDS & SERIES STRUCTURE */}
+            {activeTab === 'brands' && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#ffffff', mb: 1 }}>
+                  Official Brand & Series Directory
+                </Typography>
+
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2 }}>
+                  {BRANDS.map((b) => {
+                    const brandModels = modelsList.filter((m) => m.brandId === b.id);
+                    const brandSeries = SERIES.filter((s) => s.brandId === b.id);
+
+                    return (
+                      <Card key={b.id} sx={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', p: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                          <Box component="img" src={b.logoUrl} alt={b.name} sx={{ width: 36, height: 36, objectFit: 'contain', backgroundColor: '#ffffff', borderRadius: 2, p: 0.5 }} />
+                          <Box>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#ffffff' }}>{b.name}</Typography>
+                            <Typography variant="caption" sx={{ color: '#94a3b8' }}>{brandModels.length} Total Devices</Typography>
+                          </Box>
+                        </Box>
+
+                        <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 700, mt: 1, display: 'block' }}>Series list:</Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                          {brandSeries.map((s) => (
+                            <Chip key={s.id} label={s.name} size="small" variant="outlined" sx={{ fontSize: '0.7rem', color: '#cbd5e1', borderColor: 'rgba(255,255,255,0.15)' }} />
+                          ))}
+                        </Box>
+
+                        <Button
+                          fullWidth
+                          size="small"
+                          onClick={() => { setSelectedBrandFilter(b.id); setActiveTab('catalog'); }}
+                          sx={{ mt: 2, backgroundColor: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}
+                        >
+                          View {b.name} Devices
+                        </Button>
+                      </Card>
+                    );
+                  })}
+                </Box>
+              </Box>
+            )}
+
+          </Box>
+        </Box>
+
+        {/* Mobile Floating Action Button (FAB) */}
+        <Fab
+          color="primary"
+          aria-label="Add Device"
+          onClick={handleOpenAddModal}
+          sx={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            display: { xs: 'flex', lg: 'none' },
+            boxShadow: '0 8px 24px rgba(220, 38, 38, 0.5)',
+            zIndex: 120,
+          }}
+        >
+          <Plus size={24} color="#ffffff" />
+        </Fab>
+
+        {/* Material UI Responsive Add/Edit Dialog Modal */}
+        <Dialog
+          open={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          fullWidth
+          maxWidth="sm"
+          PaperProps={{
+            sx: {
+              backgroundColor: '#0f172a',
+              backgroundImage: 'none',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: { xs: '20px 20px 0 0', sm: 4 },
+              m: { xs: 0, sm: 2 },
+              position: { xs: 'fixed', sm: 'relative' },
+              bottom: { xs: 0, sm: 'auto' },
+              maxHeight: { xs: '90vh', sm: '85vh' },
+            },
+          }}
+        >
+          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', pb: 1 }}>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 900, color: '#ffffff', fontSize: '1.2rem' }}>
+                {editingModel ? `Edit ${editingModel.name}` : 'Add New Mobile Device'}
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                Configure specs, colors, storage variants, image source & prices.
+              </Typography>
+            </Box>
+            <IconButton size="small" onClick={() => setIsModalOpen(false)} sx={{ color: '#94a3b8' }}>
+              <X size={20} />
+            </IconButton>
+          </DialogTitle>
+
+          <Box component="form" onSubmit={handleSaveModel}>
+            <DialogContent dividers sx={{ borderColor: 'rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 2, py: 2 }}>
+              
+              {/* Brand & Series Responsive Selects */}
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+                <FormControl size="small" fullWidth>
+                  <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700, mb: 0.5 }}>Brand *</Typography>
+                  <Select
                     value={formData.brandId}
                     onChange={(e) => {
                       const bId = e.target.value;
@@ -631,1044 +1280,215 @@ export default function DemonResponsiveAdminPage() {
                         image: brandObj?.logoUrl || '/samsung.svg'
                       });
                     }}
-                    className="form-control"
+                    sx={{ backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, color: '#ffffff' }}
                   >
                     {BRANDS.map((b) => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
+                      <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
                     ))}
-                  </select>
-                </div>
+                  </Select>
+                </FormControl>
 
-                <div>
-                  <label className="field-label">Series *</label>
-                  <select
+                <FormControl size="small" fullWidth>
+                  <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700, mb: 0.5 }}>Series *</Typography>
+                  <Select
                     value={formData.seriesId}
                     onChange={(e) => setFormData({ ...formData, seriesId: e.target.value })}
-                    className="form-control"
+                    sx={{ backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, color: '#ffffff' }}
                   >
                     {SERIES.filter((s) => s.brandId === formData.brandId).map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                      <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
                     ))}
-                  </select>
-                </div>
-              </div>
+                  </Select>
+                </FormControl>
+              </Box>
 
-              <div>
-                <label className="field-label">Device Model Name *</label>
-                <input
-                  type="text"
+              {/* Model Name */}
+              <Box>
+                <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700, mb: 0.5, display: 'block' }}>Device Model Name *</Typography>
+                <TextField
+                  fullWidth
+                  size="small"
                   required
+                  placeholder="e.g. S-25 Ultra 12/512 or iPhone 17 Pro"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g. S-25 Ultra 12/512 or iPhone 17 Pro"
-                  className="form-control"
+                  InputProps={{
+                    sx: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, color: '#ffffff', fontSize: '0.875rem' }
+                  }}
                 />
-              </div>
+              </Box>
 
-              <div className="form-responsive-grid">
-                <div>
-                  <label className="field-label">Base Cash Price (PKR) *</label>
-                  <input
+              {/* Price & Image Source */}
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+                <Box>
+                  <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700, mb: 0.5, display: 'block' }}>Base Cash Price (PKR) *</Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
                     type="number"
                     required
+                    placeholder="e.g. 128000"
                     value={formData.basePrice}
                     onChange={(e) => setFormData({ ...formData, basePrice: Number(e.target.value) })}
-                    placeholder="e.g. 128000"
-                    className="form-control"
+                    InputProps={{
+                      sx: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, color: '#ffffff', fontSize: '0.875rem' }
+                    }}
                   />
-                </div>
+                </Box>
 
-                <div>
-                  <label className="field-label">Image Source / Logo URL</label>
-                  <input
-                    type="text"
+                <Box>
+                  <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700, mb: 0.5, display: 'block' }}>Image Source / Logo URL</Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="/samsung.svg or /apple.png"
                     value={formData.image}
                     onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    placeholder="/samsung.svg or /apple.png"
-                    className="form-control"
+                    InputProps={{
+                      sx: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, color: '#ffffff', fontSize: '0.875rem' }
+                    }}
                   />
-                </div>
-              </div>
+                </Box>
+              </Box>
 
               {/* Image Preview Box */}
               {formData.image && (
-                <div className="img-preview-box">
-                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>Preview:</span>
-                  <img src={formData.image} alt="Preview" style={{ height: '34px', objectFit: 'contain' }} />
-                </div>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, backgroundColor: 'rgba(255,255,255,0.04)', p: 1, borderRadius: 2 }}>
+                  <Typography variant="caption" sx={{ color: '#94a3b8' }}>Preview:</Typography>
+                  <Box component="img" src={formData.image} alt="Preview" sx={{ height: 34, objectFit: 'contain' }} />
+                </Box>
               )}
 
-              <div>
-                <label className="field-label">Specs Tags (Comma-separated)</label>
-                <input
-                  type="text"
+              {/* Specs */}
+              <Box>
+                <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700, mb: 0.5, display: 'block' }}>Specs Tags (Comma-separated)</Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="8GB RAM, 256GB Storage, Official Warranty"
                   value={formData.specs}
                   onChange={(e) => setFormData({ ...formData, specs: e.target.value })}
-                  placeholder="8GB RAM, 256GB Storage, Official Warranty"
-                  className="form-control"
+                  InputProps={{
+                    sx: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, color: '#ffffff', fontSize: '0.875rem' }
+                  }}
                 />
-              </div>
+              </Box>
 
               {/* COLOR VARIATIONS MANAGER */}
-              <div className="variant-section-box">
-                <div className="section-title-row">
+              <Box sx={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 2.5, p: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                   <Palette size={18} color="#818cf8" />
-                  <span>Color Variations</span>
-                </div>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#ffffff' }}>Color Variations</Typography>
+                </Box>
 
-                <div className="chips-flex-wrap">
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, mb: 1.5 }}>
                   {formData.colors.map((c, idx) => (
-                    <div key={idx} className="variant-chip">
-                      <span className="color-dot" style={{ backgroundColor: c.hex }} />
-                      <span>{c.name}</span>
-                      <X size={14} style={{ cursor: 'pointer' }} onClick={() => handleRemoveColorFromForm(idx)} />
-                    </div>
+                    <Chip
+                      key={idx}
+                      avatar={<Box sx={{ width: 14, height: 14, borderRadius: '50%', backgroundColor: c.hex, ml: '4px !important' }} />}
+                      label={c.name}
+                      onDelete={() => handleRemoveColorFromForm(idx)}
+                      size="small"
+                      sx={{ backgroundColor: 'rgba(255,255,255,0.08)', color: '#ffffff', fontSize: '0.75rem' }}
+                    />
                   ))}
-                </div>
+                </Box>
 
-                <div className="add-variant-row">
-                  <input
-                    type="text"
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                  <TextField
+                    size="small"
+                    placeholder="Color Name (e.g. Cobalt Blue)"
                     value={newColorName}
                     onChange={(e) => setNewColorName(e.target.value)}
-                    placeholder="Color Name (e.g. Cobalt Blue)"
-                    className="form-control flex-1"
+                    sx={{ flex: 1, '& input': { p: 0.8, fontSize: '0.8rem' } }}
+                    InputProps={{ sx: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, color: '#ffffff' } }}
                   />
                   <input
                     type="color"
                     value={newColorHex}
                     onChange={(e) => setNewColorHex(e.target.value)}
-                    className="color-picker-input"
+                    style={{ width: 36, height: 36, border: 'none', background: 'transparent', cursor: 'pointer' }}
                   />
-                  <button type="button" onClick={handleAddColorToForm} className="btn btn-secondary">
-                    + Add Color
-                  </button>
-                </div>
-              </div>
+                  <Button size="small" variant="outlined" onClick={handleAddColorToForm} sx={{ color: '#cbd5e1', borderColor: 'rgba(255,255,255,0.2)' }}>
+                    + Color
+                  </Button>
+                </Box>
+              </Box>
 
               {/* STORAGE & RAM VARIANTS MANAGER */}
-              <div className="variant-section-box">
-                <div className="section-title-row">
+              <Box sx={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 2.5, p: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                   <Layers size={18} color="#34d399" />
-                  <span>Storage Variants & Price Deltas</span>
-                </div>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#ffffff' }}>Storage Variants & Price Deltas</Typography>
+                </Box>
 
-                <div className="chips-flex-wrap">
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, mb: 1.5 }}>
                   {formData.storageOptions.map((st, idx) => (
-                    <div key={idx} className="variant-chip">
-                      <span>{st.size}</span>
-                      <span className="delta-text">
-                        {st.priceDelta > 0 ? `(+Rs. ${st.priceDelta.toLocaleString('en-PK')})` : '(Base Price)'}
-                      </span>
-                      <X size={14} style={{ cursor: 'pointer' }} onClick={() => handleRemoveStorageFromForm(idx)} />
-                    </div>
+                    <Chip
+                      key={idx}
+                      label={`${st.size} ${st.priceDelta > 0 ? `(+Rs. ${st.priceDelta.toLocaleString('en-PK')})` : '(Base)'}`}
+                      onDelete={() => handleRemoveStorageFromForm(idx)}
+                      size="small"
+                      sx={{ backgroundColor: 'rgba(255,255,255,0.08)', color: '#34d399', fontSize: '0.75rem', fontWeight: 700 }}
+                    />
                   ))}
-                </div>
+                </Box>
 
-                <div className="add-variant-row">
-                  <input
-                    type="text"
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                  <TextField
+                    size="small"
+                    placeholder="Variant (e.g. 12/512GB)"
                     value={newStorageSize}
                     onChange={(e) => setNewStorageSize(e.target.value)}
-                    placeholder="Variant (e.g. 12/512GB)"
-                    className="form-control flex-1"
+                    sx={{ flex: 1, '& input': { p: 0.8, fontSize: '0.8rem' } }}
+                    InputProps={{ sx: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, color: '#ffffff' } }}
                   />
-                  <input
+                  <TextField
+                    size="small"
                     type="number"
+                    placeholder="+Delta"
                     value={newPriceDelta}
                     onChange={(e) => setNewPriceDelta(Number(e.target.value))}
-                    placeholder="+Price Delta"
-                    className="form-control delta-input"
+                    sx={{ width: 100, '& input': { p: 0.8, fontSize: '0.8rem' } }}
+                    InputProps={{ sx: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, color: '#ffffff' } }}
                   />
-                  <button type="button" onClick={handleAddStorageToForm} className="btn btn-secondary">
-                    + Add Variant
-                  </button>
-                </div>
-              </div>
-
-              <div className="modal-footer">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  {editingModel ? 'Save Changes' : 'Create Device'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Global CSS for Strict Responsive Mobile Layout (1 Item per Row on Mobile) */}
-      <style jsx global>{`
-        /* Base Admin Layout */
-        .admin-root-container {
-          display: flex;
-          min-height: 100vh;
-          background-color: #0b0f19;
-          color: #f1f5f9;
-          font-family: system-ui, -apple-system, sans-serif;
-          overflow-x: hidden;
-        }
-
-        /* Desktop Permanent Sidebar */
-        .admin-sidebar {
-          width: 260px;
-          background: #0f172a;
-          border-right: 1px solid rgba(255, 255, 255, 0.08);
-          display: flex;
-          flex-direction: column;
-          position: fixed;
-          top: 0;
-          bottom: 0;
-          left: 0;
-          z-index: 100;
-          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .sidebar-header {
-          padding: 20px 16px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .sidebar-brand {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-size: 18px;
-          font-weight: 900;
-          color: #ffffff;
-        }
-
-        .sidebar-nav {
-          padding: 16px 12px;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          flex: 1;
-        }
-
-        .nav-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 12px 14px;
-          border-radius: 12px;
-          background: transparent;
-          border: none;
-          color: #94a3b8;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          width: 100%;
-          text-align: left;
-          transition: all 0.2s ease;
-        }
-        .nav-item.active, .nav-item:hover {
-          background: rgba(99, 102, 241, 0.15);
-          color: #818cf8;
-        }
-
-        .count-badge {
-          margin-left: auto;
-          background: rgba(255, 255, 255, 0.1);
-          padding: 2px 8px;
-          border-radius: 10px;
-          font-size: 11px;
-        }
-
-        .sidebar-footer {
-          padding: 16px;
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        .back-store-link {
-          color: #94a3b8;
-          text-decoration: none;
-          font-size: 13px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          justify-content: center;
-          padding: 6px;
-        }
-
-        /* Main Wrapper */
-        .admin-main-wrapper {
-          flex: 1;
-          margin-left: 260px;
-          display: flex;
-          flex-direction: column;
-          min-width: 0;
-        }
-
-        .admin-header {
-          position: sticky;
-          top: 0;
-          z-index: 90;
-          background: rgba(15, 23, 42, 0.9);
-          backdrop-filter: blur(10px);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-          padding: 14px 24px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .header-left {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .header-title {
-          font-size: 18px;
-          font-weight: 800;
-          color: #ffffff;
-          margin: 0;
-        }
-
-        .header-right {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .dashboard-content {
-          padding: 24px;
-          max-width: 1300px;
-          width: 100%;
-          margin: 0 auto;
-        }
-
-        /* Hero Card */
-        .hero-card {
-          background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
-          border: 1px solid rgba(99, 102, 241, 0.2);
-          border-radius: 20px;
-          padding: 24px;
-          margin-bottom: 24px;
-        }
-
-        .hero-card-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 16px;
-        }
-
-        .hero-title {
-          font-size: 24px;
-          font-weight: 900;
-          color: #ffffff;
-          margin: 0 0 4px 0;
-        }
-
-        .hero-desc {
-          font-size: 13px;
-          color: #a5b4fc;
-          margin: 0;
-        }
-
-        /* Filter Controls */
-        .filters-container {
-          display: flex;
-          gap: 12px;
-          margin-top: 20px;
-          flex-wrap: wrap;
-        }
-
-        .search-input-wrapper {
-          flex: 1;
-          min-width: 240px;
-          position: relative;
-          display: flex;
-          align-items: center;
-          background: rgba(0, 0, 0, 0.35);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          border-radius: 12px;
-          padding: 0 12px;
-        }
-
-        .search-icon {
-          position: absolute;
-          left: 12px;
-        }
-
-        .search-input {
-          width: 100%;
-          background: transparent;
-          border: none;
-          color: #ffffff;
-          padding: 12px 12px 12px 32px;
-          outline: none;
-          font-size: 14px;
-        }
-
-        .clear-icon {
-          position: absolute;
-          right: 12px;
-        }
-
-        .select-filters-group {
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-
-        .custom-select {
-          background: rgba(0, 0, 0, 0.35);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          border-radius: 12px;
-          padding: 10px 14px;
-          color: #ffffff;
-          font-size: 13px;
-          outline: none;
-        }
-        .custom-select option {
-          background: #0f172a;
-        }
-
-        .view-toggle-group {
-          display: flex;
-          background: rgba(0, 0, 0, 0.35);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          border-radius: 12px;
-          padding: 2px;
-        }
-
-        .toggle-btn {
-          background: transparent;
-          border: none;
-          color: #94a3b8;
-          padding: 8px 12px;
-          border-radius: 10px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-        }
-        .toggle-btn.active {
-          background: #6366f1;
-          color: #ffffff;
-        }
-
-        .brand-pills-row {
-          display: flex;
-          gap: 8px;
-          overflow-x: auto;
-          margin-top: 16px;
-          padding-bottom: 4px;
-          scrollbar-width: none;
-        }
-
-        .brand-pill {
-          background: rgba(255, 255, 255, 0.06);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          color: #cbd5e1;
-          padding: 6px 14px;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          white-space: nowrap;
-        }
-        .brand-pill.active {
-          background: #6366f1;
-          color: #ffffff;
-          border-color: #6366f1;
-        }
-
-        /* STRICT RESPONSIVE CARDS GRID:
-           - Mobile (< 640px): 1 ITEM PER ROW (grid-template-columns: 1fr)
-           - Tablet (640px - 1023px): 2 ITEMS PER ROW
-           - Desktop (1024px+): 3 ITEMS PER ROW
-           - Large Desktop (1280px+): 4 ITEMS PER ROW
-        */
-        .responsive-cards-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 16px;
-          width: 100%;
-        }
-
-        @media (min-width: 640px) {
-          .responsive-cards-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-
-        @media (min-width: 1024px) {
-          .responsive-cards-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-        }
-
-        @media (min-width: 1280px) {
-          .responsive-cards-grid {
-            grid-template-columns: repeat(4, 1fr);
-          }
-        }
-
-        /* Card Styling */
-        .device-card-item {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 16px;
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          width: 100%;
-          min-width: 0;
-        }
-
-        .card-header-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .card-img-box {
-          width: 48px;
-          height: 48px;
-          background: #ffffff;
-          border-radius: 12px;
-          padding: 4px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-        .card-img-box img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
-
-        .card-header-meta {
-          flex: 1;
-          min-width: 0;
-        }
-
-        .card-brand-badge {
-          font-size: 11px;
-          color: #818cf8;
-          font-weight: 700;
-          text-transform: uppercase;
-        }
-
-        .card-device-title {
-          font-size: 15px;
-          font-weight: 800;
-          color: #ffffff;
-          margin: 2px 0;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .card-specs-text {
-          font-size: 11px;
-          color: #94a3b8;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .card-swatches-strip {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: rgba(0, 0, 0, 0.25);
-          padding: 8px 12px;
-          border-radius: 8px;
-        }
-
-        .strip-label {
-          font-size: 11px;
-          color: #94a3b8;
-          font-weight: 600;
-        }
-
-        .dots-flex {
-          display: flex;
-          gap: 6px;
-          align-items: center;
-        }
-
-        .color-dot {
-          width: 14px;
-          height: 14px;
-          border-radius: 50%;
-          display: inline-block;
-          border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .no-swatches {
-          font-size: 11px;
-          color: #64748b;
-        }
-
-        .card-price-box {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          background: rgba(0, 0, 0, 0.35);
-          padding: 10px 14px;
-          border-radius: 10px;
-        }
-
-        .price-label {
-          font-size: 10px;
-          color: #64748b;
-          text-transform: uppercase;
-          font-weight: 700;
-        }
-
-        .cash-price-val {
-          font-size: 15px;
-          font-weight: 900;
-          color: #f43f5e;
-        }
-
-        .emi-price-val {
-          font-size: 13px;
-          font-weight: 700;
-          color: #38bdf8;
-        }
-
-        .card-actions-grid {
-          display: flex;
-          gap: 8px;
-        }
-
-        .btn-card-action {
-          flex: 1;
-          padding: 10px;
-          border-radius: 10px;
-          font-size: 12px;
-          font-weight: 700;
-          border: none;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-        }
-        .btn-card-action.edit {
-          background: rgba(99, 102, 241, 0.15);
-          color: #818cf8;
-        }
-        .btn-card-action.delete {
-          background: rgba(239, 68, 68, 0.15);
-          color: #f87171;
-        }
-
-        /* Table view styling for desktop */
-        .desktop-table-container {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 16px;
-          overflow-x: auto;
-          margin-bottom: 24px;
-        }
-
-        .desktop-table {
-          width: 100%;
-          border-collapse: collapse;
-          text-align: left;
-          font-size: 14px;
-        }
-
-        .desktop-table th {
-          background: rgba(0, 0, 0, 0.3);
-          padding: 14px 16px;
-          color: #94a3b8;
-          font-size: 12px;
-          text-transform: uppercase;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .desktop-table td {
-          padding: 14px 16px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .table-device-cell {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .table-device-cell img {
-          width: 36px;
-          height: 36px;
-          object-fit: contain;
-          background: #ffffff;
-          border-radius: 8px;
-          padding: 2px;
-        }
-
-        .table-device-name {
-          font-weight: 800;
-          color: #ffffff;
-        }
-
-        .table-device-specs {
-          font-size: 11px;
-          color: #64748b;
-        }
-
-        .table-text-cell {
-          color: #cbd5e1;
-          font-weight: 600;
-        }
-
-        .table-text-cell .sub-text {
-          font-size: 12px;
-          color: #64748b;
-        }
-
-        .table-price-cell {
-          font-weight: 800;
-          color: #f43f5e;
-        }
-
-        .table-emi-cell {
-          font-weight: 700;
-          color: #38bdf8;
-        }
-
-        .table-actions-row {
-          display: flex;
-          justify-content: flex-end;
-          gap: 6px;
-        }
-
-        .btn-action {
-          padding: 6px 12px;
-          border-radius: 8px;
-          font-size: 12px;
-          font-weight: 700;
-          border: none;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-        .btn-action.edit {
-          background: rgba(99, 102, 241, 0.15);
-          color: #818cf8;
-        }
-        .btn-action.delete {
-          background: rgba(239, 68, 68, 0.15);
-          color: #f87171;
-        }
-
-        /* Buttons & Controls */
-        .btn {
-          border: none;
-          border-radius: 10px;
-          padding: 10px 18px;
-          font-size: 13px;
-          font-weight: 700;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          transition: all 0.2s ease;
-        }
-
-        .btn-primary {
-          background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-          color: #ffffff;
-          box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);
-        }
-
-        .btn-secondary {
-          background: rgba(255, 255, 255, 0.08);
-          color: #cbd5e1;
-          border: 1px solid rgba(255, 255, 255, 0.15);
-        }
-
-        .icon-btn {
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          padding: 6px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .full-width {
-          width: 100%;
-        }
-
-        /* Mobile FAB */
-        .mobile-fab {
-          position: fixed;
-          bottom: 24px;
-          right: 24px;
-          width: 56px;
-          height: 56px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-          border: none;
-          box-shadow: 0 6px 20px rgba(220, 38, 38, 0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 150;
-        }
-
-        /* Modal Drawer Layout */
-        .modal-backdrop {
-          position: fixed;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.8);
-          backdrop-filter: blur(8px);
-          display: flex;
-          align-items: flex-end;
-          justify-content: center;
-          z-index: 400;
-        }
-
-        .modal-container {
-          background: #0f172a;
-          border-top: 1px solid rgba(255, 255, 255, 0.15);
-          border-top-left-radius: 24px;
-          border-top-right-radius: 24px;
-          max-width: 600px;
-          width: 100%;
-          max-height: 92vh;
-          overflow-y: auto;
-          padding: 24px;
-          box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6);
-        }
-
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 20px;
-        }
-
-        .modal-title {
-          font-size: 20px;
-          font-weight: 900;
-          color: #ffffff;
-          margin: 0;
-        }
-
-        .modal-subtitle {
-          font-size: 12px;
-          color: #94a3b8;
-          margin: 4px 0 0 0;
-        }
-
-        .modal-body {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-
-        .form-responsive-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 12px;
-        }
-
-        @media (min-width: 640px) {
-          .form-responsive-grid {
-            grid-template-columns: 1fr 1fr;
-          }
-        }
-
-        .field-label {
-          font-size: 12px;
-          font-weight: 700;
-          color: #94a3b8;
-          margin-bottom: 4px;
-          display: block;
-        }
-
-        .form-control {
-          width: 100%;
-          background: rgba(255, 255, 255, 0.06);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          border-radius: 10px;
-          padding: 12px;
-          color: #ffffff;
-          font-size: 14px;
-          outline: none;
-        }
-
-        .img-preview-box {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          background: rgba(255, 255, 255, 0.04);
-          padding: 8px 12px;
-          border-radius: 8px;
-        }
-
-        .variant-section-box {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 12px;
-          padding: 14px;
-        }
-
-        .section-title-row {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 10px;
-          font-weight: 800;
-          font-size: 14px;
-          color: #ffffff;
-        }
-
-        .chips-flex-wrap {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-
-        .variant-chip {
-          background: rgba(255, 255, 255, 0.08);
-          padding: 6px 12px;
-          border-radius: 20px;
-          font-size: 12px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-
-        .delta-text {
-          color: #34d399;
-          font-weight: 700;
-        }
-
-        .add-variant-row {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-          margin-top: 10px;
-        }
-
-        .color-picker-input {
-          width: 42px;
-          height: 42px;
-          border: none;
-          background: transparent;
-          cursor: pointer;
-          flex-shrink: 0;
-        }
-
-        .delta-input {
-          width: 110px;
-          flex-shrink: 0;
-        }
-
-        .modal-footer {
-          display: flex;
-          justify-content: flex-end;
-          gap: 10px;
-          margin-top: 10px;
-        }
-
-        .empty-state-card {
-          padding: 60px;
-          text-align: center;
-          background: rgba(255, 255, 255, 0.02);
-          border-radius: 16px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .flex-1 {
-          flex: 1;
-        }
-
-        /* Mobile Breakpoint Utilities (< 1024px) */
-        @media (max-width: 1023px) {
-          .admin-sidebar {
-            transform: translateX(-100%);
-            width: 280px;
-            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
-          }
-          .admin-sidebar.drawer-open {
-            transform: translateX(0);
-          }
-          .sidebar-backdrop {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
-            z-index: 95;
-          }
-          .admin-main-wrapper {
-            margin-left: 0 !important;
-          }
-          .lg-only-block {
-            display: none !important;
-          }
-        }
-
-        @media (min-width: 1024px) {
-          .lg-hidden {
-            display: none !important;
-          }
-          .sidebar-backdrop {
-            display: none !important;
-          }
-          .mobile-only-inline {
-            display: none !important;
-          }
-          .mobile-fab {
-            display: none !important;
-          }
-          .lg-hidden-grid {
-            display: none !important;
-          }
-        }
-
-        @media (max-width: 639px) {
-          .sm-hidden {
-            display: none !important;
-          }
-          .dashboard-content {
-            padding: 12px;
-          }
-          .hero-card {
-            padding: 16px;
-          }
-          .hero-title {
-            font-size: 20px;
-          }
-          .filters-container {
-            flex-direction: column;
-          }
-          .select-filters-group {
-            width: 100%;
-          }
-          .custom-select {
-            flex: 1;
-          }
-        }
-      `}</style>
-    </div>
+                  <Button size="small" variant="outlined" onClick={handleAddStorageToForm} sx={{ color: '#cbd5e1', borderColor: 'rgba(255,255,255,0.2)' }}>
+                    + Variant
+                  </Button>
+                </Box>
+              </Box>
+
+            </DialogContent>
+
+            <DialogActions sx={{ p: 2, borderColor: 'rgba(255,255,255,0.08)' }}>
+              <Button onClick={() => setIsModalOpen(false)} sx={{ color: '#cbd5e1' }}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="contained" color="primary" sx={{ px: 3, fontWeight: 800 }}>
+                {editingModel ? 'Save Changes' : 'Create Device'}
+              </Button>
+            </DialogActions>
+          </Box>
+        </Dialog>
+
+        {/* Snackbar Toast Feedback */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
+            severity={snackbar.severity}
+            variant="filled"
+            sx={{ width: '100%', borderRadius: 2.5, fontWeight: 700 }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+
+      </Box>
+    </ThemeProvider>
   );
 }
