@@ -15,13 +15,14 @@ import {
   Smartphone,
   Palette,
   Layers,
-  Sparkles,
   Check,
   ChevronRight,
   Sliders,
   Image as ImageIcon,
   DollarSign,
-  Tag
+  Tag,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 import { useWizard } from '../../../context/WizardContext';
 import { BRANDS, SERIES, MobileModel, ColorOption, StorageOption } from '../../../data/catalog';
@@ -35,23 +36,26 @@ const PRESET_COLORS: ColorOption[] = [
   { name: 'Rose Gold', hex: '#f43f5e' }
 ];
 
-export default function DemonMaterialAdminPage() {
+export default function DemonResponsiveAdminPage() {
   const { modelsList, addModel, updateModel, deleteModel, resetCatalog } = useWizard();
 
-  // Sidebar Drawer state for Mobile
+  // Navigation Sidebar state (mobile drawer)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'catalog' | 'colors' | 'variants' | 'brands'>('catalog');
 
-  // Search & Filter
+  // Search & Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>('all');
   const [selectedSeriesFilter, setSelectedSeriesFilter] = useState<string>('all');
+
+  // View Mode: grid vs table on desktop
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
   // Add / Edit Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingModel, setEditingModel] = useState<MobileModel | null>(null);
 
-  // Form Fields for Device Editing
+  // Form State
   const [formData, setFormData] = useState<{
     id: string;
     brandId: string;
@@ -74,7 +78,7 @@ export default function DemonMaterialAdminPage() {
     storageOptions: [{ size: 'Standard Storage', priceDelta: 0 }]
   });
 
-  // Temporary Color & Variant Inputs inside Modal
+  // Modal Temp Variant Inputs
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#2563eb');
   const [newStorageSize, setNewStorageSize] = useState('');
@@ -197,78 +201,38 @@ export default function DemonMaterialAdminPage() {
   };
 
   return (
-    <div className="mui-admin-wrapper">
-      {/* Top App Bar (Material UI Header) */}
-      <header className="mui-app-bar">
-        <div className="mui-app-bar-inner">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button
-              type="button"
-              className="mui-icon-button mobile-menu-btn"
-              onClick={() => setIsSidebarOpen(true)}
-              aria-label="Open Navigation Menu"
-            >
-              <Menu size={22} color="#ffffff" />
-            </button>
-
-            <Link href="/" className="mui-logo-link">
-              <Smartphone size={24} color="#6366f1" />
-              <span className="mui-logo-text">Alfa Admin <span className="mui-badge">MUI PRO</span></span>
-            </Link>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <button
-              type="button"
-              onClick={handleOpenAddModal}
-              className="mui-button mui-button-primary desktop-only"
-            >
-              <Plus size={16} /> Add Device
-            </button>
-
-            <button
-              type="button"
-              onClick={handleReset}
-              className="mui-button mui-button-outlined"
-              title="Reset Catalog"
-            >
-              <RotateCcw size={16} /> Reset
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Mobile Drawer Overlay */}
+    <div className="admin-root-container">
+      
+      {/* Permanent Desktop Sidebar + Mobile Backdrop Drawer */}
       {isSidebarOpen && (
-        <div className="mui-drawer-backdrop" onClick={() => setIsSidebarOpen(false)} />
+        <div className="sidebar-backdrop" onClick={() => setIsSidebarOpen(false)} />
       )}
 
-      {/* Sidebar Drawer */}
-      <aside className={`mui-drawer ${isSidebarOpen ? 'open' : ''}`}>
-        <div className="mui-drawer-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <ShieldAlert size={20} color="#ef4444" />
-            <span style={{ fontWeight: 800, fontSize: '15px', color: '#ffffff' }}>Admin Console</span>
+      <aside className={`admin-sidebar ${isSidebarOpen ? 'drawer-open' : ''}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-brand">
+            <Smartphone size={24} color="#6366f1" />
+            <span>Alfa Mobiles</span>
           </div>
-          <button type="button" className="mui-icon-button" onClick={() => setIsSidebarOpen(false)}>
+          <button type="button" className="icon-btn mobile-only-inline" onClick={() => setIsSidebarOpen(false)}>
             <X size={20} color="#94a3b8" />
           </button>
         </div>
 
-        <nav className="mui-drawer-nav">
+        <nav className="sidebar-nav">
           <button
             type="button"
-            className={`mui-nav-item ${activeTab === 'catalog' ? 'active' : ''}`}
+            className={`nav-item ${activeTab === 'catalog' ? 'active' : ''}`}
             onClick={() => { setActiveTab('catalog'); setIsSidebarOpen(false); }}
           >
             <Smartphone size={18} />
             <span>Device Catalog</span>
-            <span className="mui-chip-count">{modelsList.length}</span>
+            <span className="count-badge">{modelsList.length}</span>
           </button>
 
           <button
             type="button"
-            className={`mui-nav-item ${activeTab === 'colors' ? 'active' : ''}`}
+            className={`nav-item ${activeTab === 'colors' ? 'active' : ''}`}
             onClick={() => { setActiveTab('colors'); setIsSidebarOpen(false); }}
           >
             <Palette size={18} />
@@ -277,7 +241,7 @@ export default function DemonMaterialAdminPage() {
 
           <button
             type="button"
-            className={`mui-nav-item ${activeTab === 'variants' ? 'active' : ''}`}
+            className={`nav-item ${activeTab === 'variants' ? 'active' : ''}`}
             onClick={() => { setActiveTab('variants'); setIsSidebarOpen(false); }}
           >
             <Layers size={18} />
@@ -286,235 +250,374 @@ export default function DemonMaterialAdminPage() {
 
           <button
             type="button"
-            className={`mui-nav-item ${activeTab === 'brands' ? 'active' : ''}`}
+            className={`nav-item ${activeTab === 'brands' ? 'active' : ''}`}
             onClick={() => { setActiveTab('brands'); setIsSidebarOpen(false); }}
           >
             <Sliders size={18} />
-            <span>Brands ({BRANDS.length})</span>
+            <span>Brands & Series</span>
           </button>
         </nav>
 
-        <div className="mui-drawer-footer">
-          <button type="button" onClick={handleOpenAddModal} className="mui-button mui-button-primary full-width">
-            <Plus size={18} /> Create New Device
+        <div className="sidebar-footer">
+          <button type="button" onClick={handleOpenAddModal} className="btn btn-primary full-width">
+            <Plus size={18} /> Add New Device
           </button>
 
-          <Link href="/" className="mui-link-button">
+          <Link href="/" className="back-store-link">
             <ArrowLeft size={16} /> Return to Storefront
           </Link>
         </div>
       </aside>
 
-      {/* Main Content Layout */}
-      <main className="mui-main-content">
-
-        {/* Action Hero Header */}
-        <div className="mui-hero-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-              <h1 className="mui-hero-title">
-                {activeTab === 'catalog' && 'Mobile Device Catalog'}
-                {activeTab === 'colors' && 'Color Swatch Manager'}
-                {activeTab === 'variants' && 'Storage & RAM Variant Manager'}
-                {activeTab === 'brands' && 'Brand & Series System'}
-              </h1>
-              <p className="mui-hero-subtitle">
-                Manage mobile devices, color variations, storage price deltas & image URLs in real time.
-              </p>
-            </div>
-
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button type="button" onClick={handleOpenAddModal} className="mui-button mui-button-primary">
-                <Plus size={16} /> Add Device
-              </button>
-            </div>
-          </div>
-
-          {/* Material Search & Filter Row */}
-          <div className="mui-search-row">
-            <div className="mui-search-field">
-              <Search size={18} color="#94a3b8" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search device name, brand or model..."
-              />
-              {searchTerm && <X size={16} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setSearchTerm('')} />}
-            </div>
-
-            <div className="mui-filter-group">
-              <select
-                value={selectedBrandFilter}
-                onChange={(e) => {
-                  setSelectedBrandFilter(e.target.value);
-                  setSelectedSeriesFilter('all');
-                }}
-                className="mui-select"
-              >
-                <option value="all">All Brands</option>
-                {BRANDS.map((b) => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </select>
-
-              <select
-                value={selectedSeriesFilter}
-                onChange={(e) => setSelectedSeriesFilter(e.target.value)}
-                className="mui-select"
-              >
-                <option value="all">All Series</option>
-                {availableSeriesForFilter.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Brand Filter Pills */}
-          <div className="mui-pills-row">
+      {/* Main Content Area */}
+      <div className="admin-main-wrapper">
+        
+        {/* Top Header */}
+        <header className="admin-header">
+          <div className="header-left">
             <button
               type="button"
-              className={`mui-pill ${selectedBrandFilter === 'all' ? 'active' : ''}`}
-              onClick={() => { setSelectedBrandFilter('all'); setSelectedSeriesFilter('all'); }}
+              className="icon-btn lg-hidden"
+              onClick={() => setIsSidebarOpen(true)}
+              aria-label="Open Sidebar Menu"
             >
-              All ({modelsList.length})
+              <Menu size={22} color="#ffffff" />
             </button>
-            {BRANDS.map((b) => {
-              const count = modelsList.filter((m) => m.brandId === b.id).length;
-              return (
-                <button
-                  key={b.id}
-                  type="button"
-                  className={`mui-pill ${selectedBrandFilter === b.id ? 'active' : ''}`}
-                  onClick={() => { setSelectedBrandFilter(b.id); setSelectedSeriesFilter('all'); }}
-                >
-                  {b.name} ({count})
+            <h2 className="header-title">Admin Dashboard</h2>
+          </div>
+
+          <div className="header-right">
+            <button
+              type="button"
+              onClick={handleOpenAddModal}
+              className="btn btn-primary sm-hidden"
+            >
+              <Plus size={16} /> Add Device
+            </button>
+
+            <button
+              type="button"
+              onClick={handleReset}
+              className="btn btn-secondary"
+              title="Reset Catalog"
+            >
+              <RotateCcw size={16} /> Reset
+            </button>
+          </div>
+        </header>
+
+        {/* Inner Responsive Dashboard Workspace */}
+        <div className="dashboard-content">
+          
+          {/* Overview Hero Card */}
+          <div className="hero-card">
+            <div className="hero-card-header">
+              <div>
+                <h1 className="hero-title">
+                  {activeTab === 'catalog' && 'Mobile Device Catalog'}
+                  {activeTab === 'colors' && 'Color Variations Manager'}
+                  {activeTab === 'variants' && 'Storage & RAM Variant Manager'}
+                  {activeTab === 'brands' && 'Brand & Series Structure'}
+                </h1>
+                <p className="hero-desc">
+                  Manage devices, color swatches, RAM/storage variants & PKR prices in real time.
+                </p>
+              </div>
+
+              <div className="hero-actions">
+                <button type="button" onClick={handleOpenAddModal} className="btn btn-primary">
+                  <Plus size={16} /> Add Device
                 </button>
-              );
-            })}
-          </div>
-        </div>
+              </div>
+            </div>
 
-        {/* Catalog Grid View */}
-        {filteredModels.length > 0 ? (
-          <div className="mui-grid">
-            {filteredModels.map((model) => {
-              const brand = BRANDS.find((b) => b.id === model.brandId);
-              const series = SERIES.find((s) => s.id === model.seriesId);
-              const monthly = Math.round(model.basePrice / 24);
+            {/* Responsive Search & Filters */}
+            <div className="filters-container">
+              <div className="search-input-wrapper">
+                <Search size={18} color="#94a3b8" className="search-icon" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search device name..."
+                  className="search-input"
+                />
+                {searchTerm && (
+                  <X size={16} color="#94a3b8" className="clear-icon" onClick={() => setSearchTerm('')} />
+                )}
+              </div>
 
-              return (
-                <div key={model.id} className="mui-card">
-                  <div className="mui-card-top">
-                    <div className="mui-device-img-container">
-                      <img src={model.image} alt={model.name} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="mui-brand-tag">{brand?.name} • {series?.name}</div>
-                      <h3 className="mui-device-name">{model.name}</h3>
-                      <div className="mui-specs-text">{model.specs.join(' • ')}</div>
-                    </div>
-                  </div>
+              <div className="select-filters-group">
+                <select
+                  value={selectedBrandFilter}
+                  onChange={(e) => {
+                    setSelectedBrandFilter(e.target.value);
+                    setSelectedSeriesFilter('all');
+                  }}
+                  className="custom-select"
+                >
+                  <option value="all">All Brands ({BRANDS.length})</option>
+                  {BRANDS.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
 
-                  {/* Colors Swatches Bar */}
-                  <div className="mui-swatch-strip">
-                    <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>Colors:</span>
-                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                      {model.colors && model.colors.length > 0 ? (
-                        model.colors.map((c, i) => (
-                          <span
-                            key={i}
-                            className="mui-dot"
-                            style={{ backgroundColor: c.hex }}
-                            title={`${c.name} (${c.hex})`}
-                          />
-                        ))
-                      ) : (
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>Default Swatches</span>
-                      )}
-                    </div>
-                  </div>
+                <select
+                  value={selectedSeriesFilter}
+                  onChange={(e) => setSelectedSeriesFilter(e.target.value)}
+                  className="custom-select"
+                >
+                  <option value="all">All Series</option>
+                  {availableSeriesForFilter.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
 
-                  {/* Pricing Box */}
-                  <div className="mui-price-box">
-                    <div>
-                      <div className="mui-price-label">Cash Price</div>
-                      <div className="mui-cash-price">Rs. {model.basePrice.toLocaleString('en-PK')}</div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div className="mui-price-label">24-Mo EMI</div>
-                      <div className="mui-emi-price">Rs. {monthly.toLocaleString('en-PK')}/mo</div>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="mui-card-actions">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditModal(model)}
-                      className="mui-action-btn edit"
-                    >
-                      <Edit3 size={14} /> Edit & Variants
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(model.id, model.name)}
-                      className="mui-action-btn delete"
-                    >
-                      <Trash2 size={14} /> Remove
-                    </button>
-                  </div>
+                <div className="view-toggle-group sm-hidden">
+                  <button
+                    type="button"
+                    className={`toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                    onClick={() => setViewMode('grid')}
+                    title="Grid View"
+                  >
+                    <LayoutGrid size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className={`toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
+                    onClick={() => setViewMode('table')}
+                    title="Table View"
+                  >
+                    <List size={16} />
+                  </button>
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="mui-empty-card">
-            <Smartphone size={40} color="#64748b" />
-            <p>No devices match your search query or brand selection.</p>
-            <button type="button" onClick={handleOpenAddModal} className="mui-button mui-button-primary">
-              <Plus size={16} /> Add First Device
-            </button>
-          </div>
-        )}
+              </div>
+            </div>
 
-      </main>
+            {/* Horizontal Brand Pills (Scrollable) */}
+            <div className="brand-pills-row">
+              <button
+                type="button"
+                className={`brand-pill ${selectedBrandFilter === 'all' ? 'active' : ''}`}
+                onClick={() => { setSelectedBrandFilter('all'); setSelectedSeriesFilter('all'); }}
+              >
+                All ({modelsList.length})
+              </button>
+              {BRANDS.map((b) => {
+                const count = modelsList.filter((m) => m.brandId === b.id).length;
+                return (
+                  <button
+                    key={b.id}
+                    type="button"
+                    className={`brand-pill ${selectedBrandFilter === b.id ? 'active' : ''}`}
+                    onClick={() => { setSelectedBrandFilter(b.id); setSelectedSeriesFilter('all'); }}
+                  >
+                    {b.name} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* DEVICE CATALOG DISPLAY */}
+          {filteredModels.length > 0 ? (
+            <div>
+              {/* Desktop Table View (visible on lg screens when viewMode === 'table') */}
+              {viewMode === 'table' && (
+                <div className="desktop-table-container lg-only-block">
+                  <table className="desktop-table">
+                    <thead>
+                      <tr>
+                        <th>Device</th>
+                        <th>Brand / Series</th>
+                        <th>Colors</th>
+                        <th>Cash Price</th>
+                        <th>24-Mo EMI</th>
+                        <th style={{ textAlign: 'right' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredModels.map((model) => {
+                        const brand = BRANDS.find((b) => b.id === model.brandId);
+                        const series = SERIES.find((s) => s.id === model.seriesId);
+                        const monthly = Math.round(model.basePrice / 24);
+
+                        return (
+                          <tr key={model.id}>
+                            <td>
+                              <div className="table-device-cell">
+                                <img src={model.image} alt={model.name} />
+                                <div>
+                                  <div className="table-device-name">{model.name}</div>
+                                  <div className="table-device-specs">{model.specs.join(' • ')}</div>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="table-text-cell">
+                              <div>{brand?.name}</div>
+                              <div className="sub-text">{series?.name}</div>
+                            </td>
+
+                            <td>
+                              <div className="swatches-dot-row">
+                                {model.colors && model.colors.map((c, i) => (
+                                  <span key={i} className="color-dot" style={{ backgroundColor: c.hex }} title={c.name} />
+                                ))}
+                              </div>
+                            </td>
+
+                            <td className="table-price-cell">
+                              Rs. {model.basePrice.toLocaleString('en-PK')}
+                            </td>
+
+                            <td className="table-emi-cell">
+                              Rs. {monthly.toLocaleString('en-PK')}/mo
+                            </td>
+
+                            <td style={{ textAlign: 'right' }}>
+                              <div className="table-actions-row">
+                                <button type="button" onClick={() => handleOpenEditModal(model)} className="btn-action edit">
+                                  <Edit3 size={14} /> Edit
+                                </button>
+                                <button type="button" onClick={() => handleDelete(model.id, model.name)} className="btn-action delete">
+                                  <Trash2 size={14} /> Delete
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Responsive Cards Grid Layout:
+                  - Mobile (<640px): STRICTLY 1 ITEM PER ROW (grid-cols-1)
+                  - Tablet (640px-1023px): 2 ITEMS PER ROW (sm:grid-cols-2)
+                  - Desktop (1024px+): 3-4 ITEMS PER ROW (lg:grid-cols-3 xl:grid-cols-4)
+              */}
+              {(viewMode === 'grid' || true) && (
+                <div className={`responsive-cards-grid ${viewMode === 'table' ? 'lg-hidden-grid' : ''}`}>
+                  {filteredModels.map((model) => {
+                    const brand = BRANDS.find((b) => b.id === model.brandId);
+                    const series = SERIES.find((s) => s.id === model.seriesId);
+                    const monthly = Math.round(model.basePrice / 24);
+
+                    return (
+                      <div key={model.id} className="device-card-item">
+                        <div className="card-header-row">
+                          <div className="card-img-box">
+                            <img src={model.image} alt={model.name} />
+                          </div>
+                          <div className="card-header-meta">
+                            <span className="card-brand-badge">{brand?.name} • {series?.name}</span>
+                            <h3 className="card-device-title">{model.name}</h3>
+                            <div className="card-specs-text">{model.specs.join(' • ')}</div>
+                          </div>
+                        </div>
+
+                        {/* Color Swatches Bar */}
+                        <div className="card-swatches-strip">
+                          <span className="strip-label">Swatches:</span>
+                          <div className="dots-flex">
+                            {model.colors && model.colors.length > 0 ? (
+                              model.colors.map((c, i) => (
+                                <span
+                                  key={i}
+                                  className="color-dot"
+                                  style={{ backgroundColor: c.hex }}
+                                  title={`${c.name} (${c.hex})`}
+                                />
+                              ))
+                            ) : (
+                              <span className="no-swatches">Standard</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Price Box */}
+                        <div className="card-price-box">
+                          <div>
+                            <div className="price-label">Cash Price</div>
+                            <div className="cash-price-val">Rs. {model.basePrice.toLocaleString('en-PK')}</div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div className="price-label">24-Mo EMI</div>
+                            <div className="emi-price-val">Rs. {monthly.toLocaleString('en-PK')}/mo</div>
+                          </div>
+                        </div>
+
+                        {/* Card Touch Actions */}
+                        <div className="card-actions-grid">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditModal(model)}
+                            className="btn-card-action edit"
+                          >
+                            <Edit3 size={15} /> Edit & Variants
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(model.id, model.name)}
+                            className="btn-card-action delete"
+                          >
+                            <Trash2 size={15} /> Delete
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="empty-state-card">
+              <Smartphone size={44} color="#64748b" />
+              <p>No devices found matching your criteria.</p>
+              <button type="button" onClick={handleOpenAddModal} className="btn btn-primary">
+                <Plus size={16} /> Add First Device
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Floating Action Button (FAB) for Mobile */}
       <button
         type="button"
-        className="mui-fab mobile-only"
+        className="mobile-fab"
         onClick={handleOpenAddModal}
         aria-label="Add Device"
       >
         <Plus size={24} color="#ffffff" />
       </button>
 
-      {/* Full-Screen Professional Edit / Variant Builder Modal */}
+      {/* Full-Screen Responsive Modal / Drawer */}
       {isModalOpen && (
-        <div className="mui-modal-backdrop">
-          <div className="mui-modal-card">
-            <div className="mui-modal-header">
+        <div className="modal-backdrop">
+          <div className="modal-container">
+            <div className="modal-header">
               <div>
-                <h2 className="mui-modal-title">
+                <h2 className="modal-title">
                   {editingModel ? `Edit ${editingModel.name}` : 'Add New Mobile Device'}
                 </h2>
-                <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>
-                  Customize specs, colors, storage variants, image source & prices.
+                <p className="modal-subtitle">
+                  Configure specs, colors, storage variants, image source & prices.
                 </p>
               </div>
-              <button type="button" className="mui-icon-button" onClick={() => setIsModalOpen(false)}>
+              <button type="button" className="icon-btn" onClick={() => setIsModalOpen(false)}>
                 <X size={20} color="#94a3b8" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveModel} className="mui-modal-body">
-              {/* Basic Device Specs */}
-              <div className="mui-form-grid">
+            <form onSubmit={handleSaveModel} className="modal-body">
+              {/* Brand & Series Selection */}
+              <div className="form-responsive-grid">
                 <div>
-                  <label className="mui-form-label">Brand *</label>
+                  <label className="field-label">Brand *</label>
                   <select
                     value={formData.brandId}
                     onChange={(e) => {
@@ -528,7 +631,7 @@ export default function DemonMaterialAdminPage() {
                         image: brandObj?.logoUrl || '/samsung.svg'
                       });
                     }}
-                    className="mui-input"
+                    className="form-control"
                   >
                     {BRANDS.map((b) => (
                       <option key={b.id} value={b.id}>{b.name}</option>
@@ -537,11 +640,11 @@ export default function DemonMaterialAdminPage() {
                 </div>
 
                 <div>
-                  <label className="mui-form-label">Series *</label>
+                  <label className="field-label">Series *</label>
                   <select
                     value={formData.seriesId}
                     onChange={(e) => setFormData({ ...formData, seriesId: e.target.value })}
-                    className="mui-input"
+                    className="form-control"
                   >
                     {SERIES.filter((s) => s.brandId === formData.brandId).map((s) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
@@ -551,110 +654,110 @@ export default function DemonMaterialAdminPage() {
               </div>
 
               <div>
-                <label className="mui-form-label">Device Model Name *</label>
+                <label className="field-label">Device Model Name *</label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g. S-25 Ultra 12/512 or iPhone 17 Pro"
-                  className="mui-input"
+                  className="form-control"
                 />
               </div>
 
-              <div className="mui-form-grid">
+              <div className="form-responsive-grid">
                 <div>
-                  <label className="mui-form-label">Base Cash Price in PKR *</label>
+                  <label className="field-label">Base Cash Price (PKR) *</label>
                   <input
                     type="number"
                     required
                     value={formData.basePrice}
                     onChange={(e) => setFormData({ ...formData, basePrice: Number(e.target.value) })}
                     placeholder="e.g. 128000"
-                    className="mui-input"
+                    className="form-control"
                   />
                 </div>
 
                 <div>
-                  <label className="mui-form-label">Image Source / Logo URL</label>
+                  <label className="field-label">Image Source / Logo URL</label>
                   <input
                     type="text"
                     value={formData.image}
                     onChange={(e) => setFormData({ ...formData, image: e.target.value })}
                     placeholder="/samsung.svg or /apple.png"
-                    className="mui-input"
+                    className="form-control"
                   />
                 </div>
               </div>
 
-              {/* Image Preview */}
+              {/* Image Preview Box */}
               {formData.image && (
-                <div className="mui-img-preview-box">
-                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>Image Preview:</span>
-                  <img src={formData.image} alt="Preview" style={{ height: '36px', objectFit: 'contain' }} />
+                <div className="img-preview-box">
+                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>Preview:</span>
+                  <img src={formData.image} alt="Preview" style={{ height: '34px', objectFit: 'contain' }} />
                 </div>
               )}
 
               <div>
-                <label className="mui-form-label">Specs Tags (Comma-separated)</label>
+                <label className="field-label">Specs Tags (Comma-separated)</label>
                 <input
                   type="text"
                   value={formData.specs}
                   onChange={(e) => setFormData({ ...formData, specs: e.target.value })}
                   placeholder="8GB RAM, 256GB Storage, Official Warranty"
-                  className="mui-input"
+                  className="form-control"
                 />
               </div>
 
               {/* COLOR VARIATIONS MANAGER */}
-              <div className="mui-section-box">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+              <div className="variant-section-box">
+                <div className="section-title-row">
                   <Palette size={18} color="#818cf8" />
-                  <span style={{ fontWeight: 800, fontSize: '14px', color: '#ffffff' }}>Color Variations</span>
+                  <span>Color Variations</span>
                 </div>
 
-                <div className="mui-chips-wrap">
+                <div className="chips-flex-wrap">
                   {formData.colors.map((c, idx) => (
-                    <div key={idx} className="mui-color-chip">
-                      <span className="mui-dot" style={{ backgroundColor: c.hex }} />
+                    <div key={idx} className="variant-chip">
+                      <span className="color-dot" style={{ backgroundColor: c.hex }} />
                       <span>{c.name}</span>
                       <X size={14} style={{ cursor: 'pointer' }} onClick={() => handleRemoveColorFromForm(idx)} />
                     </div>
                   ))}
                 </div>
 
-                <div className="mui-add-row" style={{ marginTop: '10px' }}>
+                <div className="add-variant-row">
                   <input
                     type="text"
                     value={newColorName}
                     onChange={(e) => setNewColorName(e.target.value)}
                     placeholder="Color Name (e.g. Cobalt Blue)"
-                    className="mui-input flex-1"
+                    className="form-control flex-1"
                   />
                   <input
                     type="color"
                     value={newColorHex}
                     onChange={(e) => setNewColorHex(e.target.value)}
-                    style={{ width: '42px', height: '42px', border: 'none', background: 'transparent', cursor: 'pointer' }}
+                    className="color-picker-input"
                   />
-                  <button type="button" onClick={handleAddColorToForm} className="mui-button mui-button-outlined">
+                  <button type="button" onClick={handleAddColorToForm} className="btn btn-secondary">
                     + Add Color
                   </button>
                 </div>
               </div>
 
               {/* STORAGE & RAM VARIANTS MANAGER */}
-              <div className="mui-section-box">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+              <div className="variant-section-box">
+                <div className="section-title-row">
                   <Layers size={18} color="#34d399" />
-                  <span style={{ fontWeight: 800, fontSize: '14px', color: '#ffffff' }}>Storage Variants & Price Deltas</span>
+                  <span>Storage Variants & Price Deltas</span>
                 </div>
 
-                <div className="mui-chips-wrap">
+                <div className="chips-flex-wrap">
                   {formData.storageOptions.map((st, idx) => (
-                    <div key={idx} className="mui-storage-chip">
+                    <div key={idx} className="variant-chip">
                       <span>{st.size}</span>
-                      <span className="delta">
+                      <span className="delta-text">
                         {st.priceDelta > 0 ? `(+Rs. ${st.priceDelta.toLocaleString('en-PK')})` : '(Base Price)'}
                       </span>
                       <X size={14} style={{ cursor: 'pointer' }} onClick={() => handleRemoveStorageFromForm(idx)} />
@@ -662,33 +765,32 @@ export default function DemonMaterialAdminPage() {
                   ))}
                 </div>
 
-                <div className="mui-add-row" style={{ marginTop: '10px' }}>
+                <div className="add-variant-row">
                   <input
                     type="text"
                     value={newStorageSize}
                     onChange={(e) => setNewStorageSize(e.target.value)}
                     placeholder="Variant (e.g. 12/512GB)"
-                    className="mui-input flex-1"
+                    className="form-control flex-1"
                   />
                   <input
                     type="number"
                     value={newPriceDelta}
                     onChange={(e) => setNewPriceDelta(Number(e.target.value))}
                     placeholder="+Price Delta"
-                    className="mui-input"
-                    style={{ width: '110px' }}
+                    className="form-control delta-input"
                   />
-                  <button type="button" onClick={handleAddStorageToForm} className="mui-button mui-button-outlined">
+                  <button type="button" onClick={handleAddStorageToForm} className="btn btn-secondary">
                     + Add Variant
                   </button>
                 </div>
               </div>
 
-              <div className="mui-modal-footer">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="mui-button mui-button-outlined">
+              <div className="modal-footer">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">
                   Cancel
                 </button>
-                <button type="submit" className="mui-button mui-button-primary">
+                <button type="submit" className="btn btn-primary">
                   {editingModel ? 'Save Changes' : 'Create Device'}
                 </button>
               </div>
@@ -697,140 +799,64 @@ export default function DemonMaterialAdminPage() {
         </div>
       )}
 
-      {/* Embedded Material UI Stylesheet */}
+      {/* Global CSS for Strict Responsive Mobile Layout (1 Item per Row on Mobile) */}
       <style jsx global>{`
-        .mui-admin-wrapper {
+        /* Base Admin Layout */
+        .admin-root-container {
+          display: flex;
           min-height: 100vh;
           background-color: #0b0f19;
           color: #f1f5f9;
           font-family: system-ui, -apple-system, sans-serif;
+          overflow-x: hidden;
         }
 
-        .mui-app-bar {
-          position: sticky;
-          top: 0;
-          z-index: 100;
-          background: rgba(15, 23, 42, 0.9);
-          backdrop-filter: blur(10px);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .mui-app-bar-inner {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 12px 16px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .mui-logo-link {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          text-decoration: none;
-          color: #ffffff;
-          font-weight: 900;
-          font-size: 18px;
-        }
-
-        .mui-badge {
-          background: #6366f1;
-          color: #ffffff;
-          font-size: 10px;
-          padding: 2px 6px;
-          border-radius: 10px;
-          margin-left: 4px;
-        }
-
-        .mui-icon-button {
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          padding: 6px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .mui-icon-button:hover {
-          background: rgba(255, 255, 255, 0.1);
-        }
-
-        .mui-button {
-          border: none;
-          border-radius: 10px;
-          padding: 10px 18px;
-          font-size: 13px;
-          font-weight: 700;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          transition: all 0.2s ease;
-        }
-
-        .mui-button-primary {
-          background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-          color: #ffffff;
-          box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
-        }
-
-        .mui-button-outlined {
-          background: rgba(255, 255, 255, 0.06);
-          color: #cbd5e1;
-          border: 1px solid rgba(255, 255, 255, 0.15);
-        }
-
-        /* Sidebar Drawer */
-        .mui-drawer-backdrop {
-          position: fixed;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.6);
-          backdrop-filter: blur(4px);
-          z-index: 200;
-        }
-
-        .mui-drawer {
-          position: fixed;
-          top: 0;
-          left: 0;
-          bottom: 0;
-          width: 280px;
+        /* Desktop Permanent Sidebar */
+        .admin-sidebar {
+          width: 260px;
           background: #0f172a;
-          border-right: 1px solid rgba(255, 255, 255, 0.1);
-          z-index: 300;
-          transform: translateX(-100%);
-          transition: transform 0.3s ease;
+          border-right: 1px solid rgba(255, 255, 255, 0.08);
           display: flex;
           flex-direction: column;
-        }
-        .mui-drawer.open {
-          transform: translateX(0);
+          position: fixed;
+          top: 0;
+          bottom: 0;
+          left: 0;
+          z-index: 100;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .mui-drawer-header {
-          padding: 16px;
+        .sidebar-header {
+          padding: 20px 16px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        .mui-drawer-nav {
-          padding: 16px 10px;
+        .sidebar-brand {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 18px;
+          font-weight: 900;
+          color: #ffffff;
+        }
+
+        .sidebar-nav {
+          padding: 16px 12px;
           display: flex;
           flex-direction: column;
           gap: 6px;
           flex: 1;
         }
 
-        .mui-nav-item {
+        .nav-item {
           display: flex;
           align-items: center;
           gap: 12px;
           padding: 12px 14px;
-          border-radius: 10px;
+          border-radius: 12px;
           background: transparent;
           border: none;
           color: #94a3b8;
@@ -839,13 +865,14 @@ export default function DemonMaterialAdminPage() {
           cursor: pointer;
           width: 100%;
           text-align: left;
+          transition: all 0.2s ease;
         }
-        .mui-nav-item.active, .mui-nav-item:hover {
+        .nav-item.active, .nav-item:hover {
           background: rgba(99, 102, 241, 0.15);
           color: #818cf8;
         }
 
-        .mui-chip-count {
+        .count-badge {
           margin-left: auto;
           background: rgba(255, 255, 255, 0.1);
           padding: 2px 8px;
@@ -853,15 +880,15 @@ export default function DemonMaterialAdminPage() {
           font-size: 11px;
         }
 
-        .mui-drawer-footer {
+        .sidebar-footer {
           padding: 16px;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 12px;
         }
 
-        .mui-link-button {
+        .back-store-link {
           color: #94a3b8;
           text-decoration: none;
           font-size: 13px;
@@ -869,17 +896,59 @@ export default function DemonMaterialAdminPage() {
           align-items: center;
           gap: 6px;
           justify-content: center;
-          padding: 8px;
+          padding: 6px;
         }
 
-        /* Main Content */
-        .mui-main-content {
-          max-width: 1200px;
+        /* Main Wrapper */
+        .admin-main-wrapper {
+          flex: 1;
+          margin-left: 260px;
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+        }
+
+        .admin-header {
+          position: sticky;
+          top: 0;
+          z-index: 90;
+          background: rgba(15, 23, 42, 0.9);
+          backdrop-filter: blur(10px);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          padding: 14px 24px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .header-left {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .header-title {
+          font-size: 18px;
+          font-weight: 800;
+          color: #ffffff;
+          margin: 0;
+        }
+
+        .header-right {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .dashboard-content {
+          padding: 24px;
+          max-width: 1300px;
+          width: 100%;
           margin: 0 auto;
-          padding: 20px 16px 80px 16px;
         }
 
-        .mui-hero-card {
+        /* Hero Card */
+        .hero-card {
           background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
           border: 1px solid rgba(99, 102, 241, 0.2);
           border-radius: 20px;
@@ -887,74 +956,119 @@ export default function DemonMaterialAdminPage() {
           margin-bottom: 24px;
         }
 
-        .mui-hero-title {
-          font-size: 24px;
-          font-weight: 900;
-          margin: 0 0 4px 0;
-          color: #ffffff;
+        .hero-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 16px;
         }
 
-        .mui-hero-subtitle {
-          fontSize: 13px;
+        .hero-title {
+          font-size: 24px;
+          font-weight: 900;
+          color: #ffffff;
+          margin: 0 0 4px 0;
+        }
+
+        .hero-desc {
+          font-size: 13px;
           color: #a5b4fc;
           margin: 0;
         }
 
-        .mui-search-row {
+        /* Filter Controls */
+        .filters-container {
           display: flex;
           gap: 12px;
-          margin-top: 16px;
+          margin-top: 20px;
           flex-wrap: wrap;
         }
 
-        .mui-search-field {
+        .search-input-wrapper {
           flex: 1;
-          min-width: 260px;
+          min-width: 240px;
           position: relative;
           display: flex;
           align-items: center;
-          background: rgba(0, 0, 0, 0.3);
-          border: 1px solid rgba(255, 255, 255, 0.15);
+          background: rgba(0, 0, 0, 0.35);
+          border: 1px solid rgba(255, 255, 255, 0.12);
           border-radius: 12px;
           padding: 0 12px;
         }
-        .mui-search-field input {
+
+        .search-icon {
+          position: absolute;
+          left: 12px;
+        }
+
+        .search-input {
           width: 100%;
           background: transparent;
           border: none;
           color: #ffffff;
-          padding: 12px;
+          padding: 12px 12px 12px 32px;
           outline: none;
           font-size: 14px;
         }
 
-        .mui-filter-group {
-          display: flex;
-          gap: 8px;
+        .clear-icon {
+          position: absolute;
+          right: 12px;
         }
 
-        .mui-select {
-          background: rgba(0, 0, 0, 0.3);
-          border: 1px solid rgba(255, 255, 255, 0.15);
+        .select-filters-group {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .custom-select {
+          background: rgba(0, 0, 0, 0.35);
+          border: 1px solid rgba(255, 255, 255, 0.12);
           border-radius: 12px;
           padding: 10px 14px;
           color: #ffffff;
           font-size: 13px;
           outline: none;
         }
-        .mui-select option {
+        .custom-select option {
           background: #0f172a;
         }
 
-        .mui-pills-row {
+        .view-toggle-group {
+          display: flex;
+          background: rgba(0, 0, 0, 0.35);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 12px;
+          padding: 2px;
+        }
+
+        .toggle-btn {
+          background: transparent;
+          border: none;
+          color: #94a3b8;
+          padding: 8px 12px;
+          border-radius: 10px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+        }
+        .toggle-btn.active {
+          background: #6366f1;
+          color: #ffffff;
+        }
+
+        .brand-pills-row {
           display: flex;
           gap: 8px;
           overflow-x: auto;
           margin-top: 16px;
           padding-bottom: 4px;
+          scrollbar-width: none;
         }
 
-        .mui-pill {
+        .brand-pill {
           background: rgba(255, 255, 255, 0.06);
           border: 1px solid rgba(255, 255, 255, 0.1);
           color: #cbd5e1;
@@ -965,20 +1079,45 @@ export default function DemonMaterialAdminPage() {
           cursor: pointer;
           white-space: nowrap;
         }
-        .mui-pill.active {
+        .brand-pill.active {
           background: #6366f1;
           color: #ffffff;
           border-color: #6366f1;
         }
 
-        /* Grid Cards */
-        .mui-grid {
+        /* STRICT RESPONSIVE CARDS GRID:
+           - Mobile (< 640px): 1 ITEM PER ROW (grid-template-columns: 1fr)
+           - Tablet (640px - 1023px): 2 ITEMS PER ROW
+           - Desktop (1024px+): 3 ITEMS PER ROW
+           - Large Desktop (1280px+): 4 ITEMS PER ROW
+        */
+        .responsive-cards-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+          grid-template-columns: 1fr;
           gap: 16px;
+          width: 100%;
         }
 
-        .mui-card {
+        @media (min-width: 640px) {
+          .responsive-cards-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .responsive-cards-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+
+        @media (min-width: 1280px) {
+          .responsive-cards-grid {
+            grid-template-columns: repeat(4, 1fr);
+          }
+        }
+
+        /* Card Styling */
+        .device-card-item {
           background: rgba(255, 255, 255, 0.03);
           border: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 16px;
@@ -986,59 +1125,85 @@ export default function DemonMaterialAdminPage() {
           display: flex;
           flex-direction: column;
           gap: 12px;
+          width: 100%;
+          min-width: 0;
         }
 
-        .mui-card-top {
+        .card-header-row {
           display: flex;
-          gap: 12px;
           align-items: center;
+          gap: 12px;
         }
 
-        .mui-device-img-container {
-          width: 50px;
-          height: 50px;
+        .card-img-box {
+          width: 48px;
+          height: 48px;
           background: #ffffff;
           border-radius: 12px;
-          padding: 6px;
+          padding: 4px;
           display: flex;
           align-items: center;
           justify-content: center;
+          flex-shrink: 0;
         }
-        .mui-device-img-container img {
+        .card-img-box img {
           width: 100%;
           height: 100%;
           object-fit: contain;
         }
 
-        .mui-brand-tag {
+        .card-header-meta {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .card-brand-badge {
           font-size: 11px;
           color: #818cf8;
           font-weight: 700;
           text-transform: uppercase;
         }
 
-        .mui-device-name {
+        .card-device-title {
           font-size: 15px;
           font-weight: 800;
           color: #ffffff;
           margin: 2px 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
-        .mui-specs-text {
+        .card-specs-text {
           font-size: 11px;
           color: #94a3b8;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
-        .mui-swatch-strip {
+        .card-swatches-strip {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          background: rgba(0, 0, 0, 0.2);
+          background: rgba(0, 0, 0, 0.25);
           padding: 8px 12px;
           border-radius: 8px;
         }
 
-        .mui-dot {
+        .strip-label {
+          font-size: 11px;
+          color: #94a3b8;
+          font-weight: 600;
+        }
+
+        .dots-flex {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+        }
+
+        .color-dot {
           width: 14px;
           height: 14px;
           border-radius: 50%;
@@ -1046,7 +1211,12 @@ export default function DemonMaterialAdminPage() {
           border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
-        .mui-price-box {
+        .no-swatches {
+          font-size: 11px;
+          color: #64748b;
+        }
+
+        .card-price-box {
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -1055,34 +1225,34 @@ export default function DemonMaterialAdminPage() {
           border-radius: 10px;
         }
 
-        .mui-price-label {
+        .price-label {
           font-size: 10px;
           color: #64748b;
           text-transform: uppercase;
           font-weight: 700;
         }
 
-        .mui-cash-price {
+        .cash-price-val {
           font-size: 15px;
           font-weight: 900;
           color: #f43f5e;
         }
 
-        .mui-emi-price {
+        .emi-price-val {
           font-size: 13px;
           font-weight: 700;
           color: #38bdf8;
         }
 
-        .mui-card-actions {
+        .card-actions-grid {
           display: flex;
           gap: 8px;
         }
 
-        .mui-action-btn {
+        .btn-card-action {
           flex: 1;
           padding: 10px;
-          border-radius: 8px;
+          border-radius: 10px;
           font-size: 12px;
           font-weight: 700;
           border: none;
@@ -1092,28 +1262,159 @@ export default function DemonMaterialAdminPage() {
           justify-content: center;
           gap: 6px;
         }
-        .mui-action-btn.edit {
+        .btn-card-action.edit {
           background: rgba(99, 102, 241, 0.15);
           color: #818cf8;
         }
-        .mui-action-btn.delete {
+        .btn-card-action.delete {
           background: rgba(239, 68, 68, 0.15);
           color: #f87171;
         }
 
-        .mui-empty-card {
-          padding: 60px;
-          text-align: center;
-          background: rgba(255, 255, 255, 0.02);
+        /* Table view styling for desktop */
+        .desktop-table-container {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 16px;
+          overflow-x: auto;
+          margin-bottom: 24px;
+        }
+
+        .desktop-table {
+          width: 100%;
+          border-collapse: collapse;
+          text-align: left;
+          font-size: 14px;
+        }
+
+        .desktop-table th {
+          background: rgba(0, 0, 0, 0.3);
+          padding: 14px 16px;
+          color: #94a3b8;
+          font-size: 12px;
+          text-transform: uppercase;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .desktop-table td {
+          padding: 14px 16px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .table-device-cell {
           display: flex;
-          flex-direction: column;
           align-items: center;
           gap: 12px;
         }
+        .table-device-cell img {
+          width: 36px;
+          height: 36px;
+          object-fit: contain;
+          background: #ffffff;
+          border-radius: 8px;
+          padding: 2px;
+        }
 
-        /* FAB Mobile */
-        .mui-fab {
+        .table-device-name {
+          font-weight: 800;
+          color: #ffffff;
+        }
+
+        .table-device-specs {
+          font-size: 11px;
+          color: #64748b;
+        }
+
+        .table-text-cell {
+          color: #cbd5e1;
+          font-weight: 600;
+        }
+
+        .table-text-cell .sub-text {
+          font-size: 12px;
+          color: #64748b;
+        }
+
+        .table-price-cell {
+          font-weight: 800;
+          color: #f43f5e;
+        }
+
+        .table-emi-cell {
+          font-weight: 700;
+          color: #38bdf8;
+        }
+
+        .table-actions-row {
+          display: flex;
+          justify-content: flex-end;
+          gap: 6px;
+        }
+
+        .btn-action {
+          padding: 6px 12px;
+          border-radius: 8px;
+          font-size: 12px;
+          font-weight: 700;
+          border: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .btn-action.edit {
+          background: rgba(99, 102, 241, 0.15);
+          color: #818cf8;
+        }
+        .btn-action.delete {
+          background: rgba(239, 68, 68, 0.15);
+          color: #f87171;
+        }
+
+        /* Buttons & Controls */
+        .btn {
+          border: none;
+          border-radius: 10px;
+          padding: 10px 18px;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+          background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+          color: #ffffff;
+          box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);
+        }
+
+        .btn-secondary {
+          background: rgba(255, 255, 255, 0.08);
+          color: #cbd5e1;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .icon-btn {
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          padding: 6px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .full-width {
+          width: 100%;
+        }
+
+        /* Mobile FAB */
+        .mobile-fab {
           position: fixed;
           bottom: 24px;
           right: 24px;
@@ -1129,8 +1430,8 @@ export default function DemonMaterialAdminPage() {
           z-index: 150;
         }
 
-        /* Modal Drawer */
-        .mui-modal-backdrop {
+        /* Modal Drawer Layout */
+        .modal-backdrop {
           position: fixed;
           inset: 0;
           background: rgba(0, 0, 0, 0.8);
@@ -1141,7 +1442,7 @@ export default function DemonMaterialAdminPage() {
           z-index: 400;
         }
 
-        .mui-modal-card {
+        .modal-container {
           background: #0f172a;
           border-top: 1px solid rgba(255, 255, 255, 0.15);
           border-top-left-radius: 24px;
@@ -1154,33 +1455,45 @@ export default function DemonMaterialAdminPage() {
           box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6);
         }
 
-        .mui-modal-header {
+        .modal-header {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
           margin-bottom: 20px;
         }
 
-        .mui-modal-title {
+        .modal-title {
           font-size: 20px;
           font-weight: 900;
           color: #ffffff;
           margin: 0;
         }
 
-        .mui-modal-body {
+        .modal-subtitle {
+          font-size: 12px;
+          color: #94a3b8;
+          margin: 4px 0 0 0;
+        }
+
+        .modal-body {
           display: flex;
           flex-direction: column;
           gap: 16px;
         }
 
-        .mui-form-grid {
+        .form-responsive-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1fr;
           gap: 12px;
         }
 
-        .mui-form-label {
+        @media (min-width: 640px) {
+          .form-responsive-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+
+        .field-label {
           font-size: 12px;
           font-weight: 700;
           color: #94a3b8;
@@ -1188,7 +1501,7 @@ export default function DemonMaterialAdminPage() {
           display: block;
         }
 
-        .mui-input {
+        .form-control {
           width: 100%;
           background: rgba(255, 255, 255, 0.06);
           border: 1px solid rgba(255, 255, 255, 0.12);
@@ -1199,40 +1512,7 @@ export default function DemonMaterialAdminPage() {
           outline: none;
         }
 
-        .mui-section-box {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 12px;
-          padding: 14px;
-        }
-
-        .mui-chips-wrap {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-
-        .mui-color-chip, .mui-storage-chip {
-          background: rgba(255, 255, 255, 0.08);
-          padding: 6px 12px;
-          border-radius: 20px;
-          font-size: 12px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-        .mui-storage-chip .delta {
-          color: #34d399;
-          font-weight: 700;
-        }
-
-        .mui-add-row {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-        }
-
-        .mui-img-preview-box {
+        .img-preview-box {
           display: flex;
           align-items: center;
           gap: 12px;
@@ -1241,34 +1521,151 @@ export default function DemonMaterialAdminPage() {
           border-radius: 8px;
         }
 
-        .mui-modal-footer {
+        .variant-section-box {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
+          padding: 14px;
+        }
+
+        .section-title-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 10px;
+          font-weight: 800;
+          font-size: 14px;
+          color: #ffffff;
+        }
+
+        .chips-flex-wrap {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .variant-chip {
+          background: rgba(255, 255, 255, 0.08);
+          padding: 6px 12px;
+          border-radius: 20px;
+          font-size: 12px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .delta-text {
+          color: #34d399;
+          font-weight: 700;
+        }
+
+        .add-variant-row {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          margin-top: 10px;
+        }
+
+        .color-picker-input {
+          width: 42px;
+          height: 42px;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
+
+        .delta-input {
+          width: 110px;
+          flex-shrink: 0;
+        }
+
+        .modal-footer {
           display: flex;
           justify-content: flex-end;
           gap: 10px;
           margin-top: 10px;
         }
 
-        .full-width {
-          width: 100%;
-          justify-content: center;
+        .empty-state-card {
+          padding: 60px;
+          text-align: center;
+          background: rgba(255, 255, 255, 0.02);
+          border-radius: 16px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
         }
 
-        .desktop-only {
-          display: inline-flex;
-        }
-        .mobile-only {
-          display: none;
+        .flex-1 {
+          flex: 1;
         }
 
-        @media (max-width: 768px) {
-          .desktop-only {
+        /* Mobile Breakpoint Utilities (< 1024px) */
+        @media (max-width: 1023px) {
+          .admin-sidebar {
+            transform: translateX(-100%);
+            width: 280px;
+            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+          }
+          .admin-sidebar.drawer-open {
+            transform: translateX(0);
+          }
+          .sidebar-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 95;
+          }
+          .admin-main-wrapper {
+            margin-left: 0 !important;
+          }
+          .lg-only-block {
             display: none !important;
           }
-          .mobile-only {
-            display: flex !important;
+        }
+
+        @media (min-width: 1024px) {
+          .lg-hidden {
+            display: none !important;
           }
-          .mui-form-grid {
-            grid-template-columns: 1fr;
+          .sidebar-backdrop {
+            display: none !important;
+          }
+          .mobile-only-inline {
+            display: none !important;
+          }
+          .mobile-fab {
+            display: none !important;
+          }
+          .lg-hidden-grid {
+            display: none !important;
+          }
+        }
+
+        @media (max-width: 639px) {
+          .sm-hidden {
+            display: none !important;
+          }
+          .dashboard-content {
+            padding: 12px;
+          }
+          .hero-card {
+            padding: 16px;
+          }
+          .hero-title {
+            font-size: 20px;
+          }
+          .filters-container {
+            flex-direction: column;
+          }
+          .select-filters-group {
+            width: 100%;
+          }
+          .custom-select {
+            flex: 1;
           }
         }
       `}</style>
