@@ -22,12 +22,14 @@ export async function POST(request: Request) {
 
     const caption = `
 📸 <b>ATTACHED PAYMENT PROOF SCREENSHOT</b>
-
-👤 <b>Customer:</b> ${customerName}
-📞 <b>Mobile:</b> <code>${mobileNumber}</code>
-👛 <b>Wallet Service:</b> ${walletType.toUpperCase()}
-📝 <b>Account Title:</b> ${walletAccountName}
-⏰ <b>Uploaded At:</b> ${new Date().toLocaleTimeString('en-PK')}
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ├ 👤 <b>Customer Name:</b> ${customerName}
+ ├ 📞 <b>Phone Number:</b> <code>${mobileNumber}</code>
+ ├ 📲 <b>Wallet Service:</b> ${walletType.toUpperCase()}
+ ├ 📝 <b>Account Title:</b> ${walletAccountName}
+ └ ⏰ <b>Uploaded At:</b> ${new Date().toLocaleTimeString('en-PK')}
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔒 <i>Alfa Mobiles Payment Verification Engine</i>
     `.trim();
 
     // Prepare FormData for Telegram sendPhoto API
