@@ -8,6 +8,7 @@ export type PaymentMethod = 'card' | 'wallet' | 'cod';
 
 export interface CustomerDetails {
   fullName: string;
+  cnic: string;
   mobileNumber: string;
   deliveryAddress: string;
   deliveryType: DeliveryType;
@@ -145,6 +146,7 @@ export const WizardProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Step 3
   const [customerDetails, setCustomerDetails] = useState<CustomerDetails>({
     fullName: '',
+    cnic: '',
     mobileNumber: '',
     deliveryAddress: '',
     deliveryType: 'open_parcel',
@@ -300,6 +302,7 @@ export const WizardProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setCurrentOrder(null);
     setCustomerDetails({
       fullName: '',
+      cnic: '',
       mobileNumber: '',
       deliveryAddress: '',
       deliveryType: 'open_parcel',

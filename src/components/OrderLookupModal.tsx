@@ -109,7 +109,7 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({ isOpen, onCl
               type="tel"
               value={searchPhone}
               onChange={(e) => setSearchPhone(e.target.value)}
-              placeholder="e.g. 0300 1234567"
+              placeholder="xxxxxx-xxxxx"
               className="form-input"
             />
           </div>

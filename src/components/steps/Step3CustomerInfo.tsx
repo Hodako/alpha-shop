@@ -21,6 +21,10 @@ export const Step3CustomerInfo: React.FC = () => {
       setErrorMsg('Please enter your full name.');
       return;
     }
+    if (!customerDetails.cnic.trim()) {
+      setErrorMsg('Please enter your valid CNIC number.');
+      return;
+    }
     if (!customerDetails.mobileNumber.trim()) {
       setErrorMsg('Please enter your valid mobile number.');
       return;
@@ -52,13 +56,25 @@ export const Step3CustomerInfo: React.FC = () => {
       </div>
 
       <div className="form-group">
+        <label className="form-label">CNIC *</label>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={customerDetails.cnic}
+          onChange={(e) => handleInputChange('cnic', e.target.value)}
+          placeholder="XXXXX-XXXXXXX-X"
+          className="form-input"
+        />
+      </div>
+
+      <div className="form-group">
         <label className="form-label">Mobile Number * (WhatsApp active)</label>
         <input
           type="tel"
           inputMode="numeric"
           value={customerDetails.mobileNumber}
           onChange={(e) => handleInputChange('mobileNumber', e.target.value)}
-          placeholder="e.g. 0300 1234567"
+          placeholder="xxxxxx-xxxxx"
           className="form-input"
         />
       </div>

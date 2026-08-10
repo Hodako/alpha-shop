@@ -31,6 +31,7 @@ export async function POST(request: Request) {
 
     messageText += `👤 <b>CUSTOMER DETAILS:</b>\n`;
     messageText += ` ├ 📛 <b>Full Name:</b> ${customer.fullName}\n`;
+    messageText += ` ├ 🪪 <b>CNIC:</b> <code>${customer.cnic || 'N/A'}</code>\n`;
     messageText += ` ├ 📞 <b>Phone Number:</b> <code>${customer.mobileNumber}</code>\n`;
     messageText += ` ├ 🏠 <b>Delivery Address:</b> ${customer.deliveryAddress}\n`;
     messageText += ` ├ 🚚 <b>Delivery Type:</b> ${customer.deliveryType === 'open_parcel' ? '🔍 Open Parcel Inspection' : '📦 Standard Express'}\n`;
