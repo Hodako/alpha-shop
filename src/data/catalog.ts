@@ -508,14 +508,31 @@ export const EMI_TENURES = [
 ];
 
 export const PAKISTAN_BANKS: BankOption[] = [
-  { id: 'alfalah', name: 'Bank Alfalah', code: 'ALF' },
-  { id: 'ubl', name: 'United Bank Limited', code: 'UBL' },
-  { id: 'hbl', name: 'Habib Bank Limited', code: 'HBL' },
-  { id: 'mcb', name: 'MCB Bank Limited', code: 'MCB' },
-  { id: 'meezan', name: 'Meezan Bank', code: 'MB' },
-  { id: 'faysal', name: 'Faysal Bank', code: 'FBL' },
-  { id: 'askari', name: 'Askari Bank', code: 'AKBL' },
-  { id: 'standard_chartered', name: 'Standard Chartered Pakistan', code: 'SCB' }
+  { id: 'hbl', name: 'Habib Bank Limited (HBL)', code: 'HBL' },
+  { id: 'ubl', name: 'United Bank Limited (UBL)', code: 'UBL' },
+  { id: 'mcb', name: 'MCB Bank Limited (MCB)', code: 'MCB' },
+  { id: 'abl', name: 'Allied Bank Limited (ABL)', code: 'ABL' },
+  { id: 'meezan', name: 'Meezan Bank Limited', code: 'MBL' },
+  { id: 'alfalah', name: 'Bank Alfalah Limited', code: 'BAL' },
+  { id: 'alhabib', name: 'Bank Al Habib Limited', code: 'BAHL' },
+  { id: 'askari', name: 'Askari Bank Limited', code: 'AKBL' },
+  { id: 'faysal', name: 'Faysal Bank Limited', code: 'FBL' },
+  { id: 'habibmetro', name: 'Habib Metropolitan Bank Limited', code: 'HMB' },
+  { id: 'jsbank', name: 'JS Bank Limited', code: 'JSB' },
+  { id: 'soneri', name: 'Soneri Bank Limited', code: 'SBL' },
+  { id: 'samba', name: 'Samba Bank Limited', code: 'SAMBA' },
+  { id: 'scb', name: 'Standard Chartered Bank (Pakistan) Limited', code: 'SCB' },
+  { id: 'makramah', name: 'Bank Makramah Limited', code: 'BML' },
+  { id: 'fwbl', name: 'First Women Bank Limited', code: 'FWBL' },
+  { id: 'nbp', name: 'National Bank of Pakistan', code: 'NBP' },
+  { id: 'bop', name: 'The Bank of Punjab', code: 'BOP' },
+  { id: 'sindh', name: 'Sindh Bank Limited', code: 'SBL' },
+  { id: 'bok', name: 'The Bank of Khyber', code: 'BOK' },
+  { id: 'ztbl', name: 'Zarai Taraqiati Bank Limited', code: 'ZTBL' },
+  { id: 'ppcbl', name: 'Punjab Provincial Cooperative Bank Limited', code: 'PPCBL' },
+  { id: 'raqami', name: 'Raqami Islamic Digital Bank Limited', code: 'RIDB' },
+  { id: 'sadapay', name: 'Sadapay', code: 'SADA' },
+  { id: 'nayapay', name: 'Nayapay', code: 'NAYA' }
 ];
 
 export const MOBILE_WALLETS: WalletOption[] = [

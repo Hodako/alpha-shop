@@ -155,32 +155,33 @@ export const Step4PaymentAgreement: React.FC = () => {
       )}
 
       {/* Payment Type Tabs */}
-      <div className="form-group" style={{ marginBottom: '22px' }}>
-        <label style={{ fontSize: '14px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
+      <div className="form-group" style={{ marginBottom: '20px' }}>
+        <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '8px', display: 'block' }}>
           Select Payment Method
         </label>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <button
             type="button"
             onClick={() => handlePaymentTypeChange('card')}
             style={{
               background: paymentType === 'card' ? '#ffffff' : '#f8fafc',
               border: paymentType === 'card' ? '2px solid #6366f1' : '1px solid #e2e8f0',
-              borderRadius: '14px',
-              padding: '12px 10px',
-              fontSize: '14px',
+              borderRadius: '12px',
+              padding: '8px 10px',
+              fontSize: '13px',
               fontWeight: 800,
               color: paymentType === 'card' ? '#4f46e5' : '#64748b',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px',
-              boxShadow: paymentType === 'card' ? '0 4px 12px rgba(99, 102, 241, 0.15)' : 'none',
+              gap: '6px',
+              height: '42px',
+              boxShadow: paymentType === 'card' ? '0 2px 8px rgba(99, 102, 241, 0.12)' : 'none',
               transition: 'all 0.2s ease'
             }}
           >
-            <img width="24" height="24" src="https://img.icons8.com/fluency/48/credit-card-front.png" alt="credit-card-front" />
+            <img width="20" height="20" src="https://img.icons8.com/fluency/48/credit-card-front.png" alt="credit-card-front" />
             <span>Card</span>
           </button>
 
@@ -190,51 +191,39 @@ export const Step4PaymentAgreement: React.FC = () => {
             style={{
               background: paymentType === 'wallet' ? '#ffffff' : '#f8fafc',
               border: paymentType === 'wallet' ? '2px solid #6366f1' : '1px solid #e2e8f0',
-              borderRadius: '14px',
-              padding: '12px 10px',
-              fontSize: '14px',
+              borderRadius: '12px',
+              padding: '8px 10px',
+              fontSize: '13px',
               fontWeight: 800,
               color: paymentType === 'wallet' ? '#4f46e5' : '#64748b',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px',
-              boxShadow: paymentType === 'wallet' ? '0 4px 12px rgba(99, 102, 241, 0.15)' : 'none',
+              gap: '6px',
+              height: '42px',
+              boxShadow: paymentType === 'wallet' ? '0 2px 8px rgba(99, 102, 241, 0.12)' : 'none',
               transition: 'all 0.2s ease'
             }}
           >
-            <img width="24" height="24" src="https://img.icons8.com/external-xnimrodx-lineal-gradient-xnimrodx/64/external-bitcoin-ecommerce-xnimrodx-lineal-gradient-xnimrodx.png" alt="Digital Wallet" />
+            <img width="20" height="20" src="https://img.icons8.com/external-xnimrodx-lineal-gradient-xnimrodx/64/external-bitcoin-ecommerce-xnimrodx-lineal-gradient-xnimrodx.png" alt="Digital Wallet" />
             <span>Digital Wallet</span>
           </button>
         </div>
       </div>
 
-      {/* STRIPE LINK STYLE CREDIT CARD INPUT CONTAINER */}
+      {/* CLEAN MOBILE APP STYLE CREDIT CARD INPUT CONTAINER */}
       {paymentType === 'card' && (
         <div
           style={{
             background: '#ffffff',
             border: '1px solid #e2e8f0',
             borderRadius: '18px',
-            padding: '20px 18px',
+            padding: '18px 16px',
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
             marginBottom: '22px'
           }}
         >
-          {/* Header Link Branding */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ background: '#6366f1', color: '#fff', borderRadius: '6px', padding: '3px 7px', fontSize: '11px', fontWeight: 900 }}>
-                Link
-              </div>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>Express Card Checkout</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#16a34a', fontWeight: 700 }}>
-              <Lock size={12} color="#16a34a" /> 256-Bit SSL
-            </div>
-          </div>
-
           {/* Select Partner Bank */}
           <div className="form-group" style={{ marginBottom: '16px' }}>
             <label style={{ fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -248,7 +237,7 @@ export const Step4PaymentAgreement: React.FC = () => {
             >
               {PAKISTAN_BANKS.map((bank) => (
                 <option key={bank.id} value={bank.id}>
-                  {bank.name} ({bank.code})
+                  {bank.name}
                 </option>
               ))}
             </select>
