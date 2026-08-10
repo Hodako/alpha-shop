@@ -139,7 +139,7 @@ export const Step3CustomerInfo: React.FC = () => {
             </div>
             <div className="radio-content">
               <span className="radio-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <CreditCard size={16} color="#2563eb" /> Credit / Debit Card (0% EMI)
+                <img width="20" height="20" src="https://img.icons8.com/fluency/48/credit-card-front.png" alt="credit-card-front" /> Card (0% EMI)
               </span>
               <span className="radio-desc">Visa / Mastercard bank installment support.</span>
             </div>
@@ -154,7 +154,7 @@ export const Step3CustomerInfo: React.FC = () => {
             </div>
             <div className="radio-content">
               <span className="radio-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Wallet size={16} color="#16a34a" /> Mobile Wallet (Easypaisa / Upaisa / Alfalah)
+                <img width="20" height="20" src="https://img.icons8.com/external-xnimrodx-lineal-gradient-xnimrodx/64/external-bitcoin-ecommerce-xnimrodx-lineal-gradient-xnimrodx.png" alt="Digital Wallet" /> Digital Wallet (Easypaisa / Upaisa / Alfalah)
               </span>
               <span className="radio-desc">Instant digital wallet verification.</span>
             </div>

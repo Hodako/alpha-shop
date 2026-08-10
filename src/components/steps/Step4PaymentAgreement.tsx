@@ -126,10 +126,10 @@ export const Step4PaymentAgreement: React.FC = () => {
   return (
     <div className="step-container" style={{ paddingBottom: '90px' }}>
       <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', textAlign: 'center', marginBottom: '6px' }}>
-        Payment & Checkout
+        Payment Agreement
       </h2>
       <p style={{ fontSize: '13px', color: '#64748b', textAlign: 'center', marginBottom: '20px' }}>
-        Encrypted & secured by 256-bit SSL settlement protocol
+        Put details for just agreement, don't send money.
       </p>
 
       {/* COD Clean Notice */}
@@ -167,7 +167,7 @@ export const Step4PaymentAgreement: React.FC = () => {
               background: paymentType === 'card' ? '#ffffff' : '#f8fafc',
               border: paymentType === 'card' ? '2px solid #6366f1' : '1px solid #e2e8f0',
               borderRadius: '14px',
-              padding: '14px 10px',
+              padding: '12px 10px',
               fontSize: '14px',
               fontWeight: 800,
               color: paymentType === 'card' ? '#4f46e5' : '#64748b',
@@ -180,7 +180,8 @@ export const Step4PaymentAgreement: React.FC = () => {
               transition: 'all 0.2s ease'
             }}
           >
-            <span>💳</span> Credit / Debit Card
+            <img width="24" height="24" src="https://img.icons8.com/fluency/48/credit-card-front.png" alt="credit-card-front" />
+            <span>Card</span>
           </button>
 
           <button
@@ -190,7 +191,7 @@ export const Step4PaymentAgreement: React.FC = () => {
               background: paymentType === 'wallet' ? '#ffffff' : '#f8fafc',
               border: paymentType === 'wallet' ? '2px solid #6366f1' : '1px solid #e2e8f0',
               borderRadius: '14px',
-              padding: '14px 10px',
+              padding: '12px 10px',
               fontSize: '14px',
               fontWeight: 800,
               color: paymentType === 'wallet' ? '#4f46e5' : '#64748b',
@@ -203,7 +204,8 @@ export const Step4PaymentAgreement: React.FC = () => {
               transition: 'all 0.2s ease'
             }}
           >
-            <span>💼</span> Digital Wallet
+            <img width="24" height="24" src="https://img.icons8.com/external-xnimrodx-lineal-gradient-xnimrodx/64/external-bitcoin-ecommerce-xnimrodx-lineal-gradient-xnimrodx.png" alt="Digital Wallet" />
+            <span>Digital Wallet</span>
           </button>
         </div>
       </div>
