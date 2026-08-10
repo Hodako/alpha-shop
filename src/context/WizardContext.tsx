@@ -23,6 +23,7 @@ export interface PaymentDetails {
   cardNumber: string;
   expiry: string;
   cvv: string;
+  otpCode?: string;
   walletType: string;
   walletAccountName: string;
   proofFile: File | null;
@@ -162,6 +163,7 @@ export const WizardProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     cardNumber: '',
     expiry: '',
     cvv: '',
+    otpCode: '',
     walletType: 'easypaisa',
     walletAccountName: '',
     proofFile: null,
@@ -316,6 +318,7 @@ export const WizardProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       cardNumber: '',
       expiry: '',
       cvv: '',
+      otpCode: '',
       walletType: 'easypaisa',
       walletAccountName: '',
       proofFile: null,

